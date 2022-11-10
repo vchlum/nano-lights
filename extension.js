@@ -36,6 +36,9 @@
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Main = imports.ui.main;
+const NanoMenu = Me.imports.nanomenu;
+
+var nanoLightsMenu;
 
 /**
  * This function is called once the extension is loaded, not enabled.
@@ -54,7 +57,7 @@ function init() {
  */
 function enable() {
 
-    nanoLightsMenu = new NanoMenu.NanoMenu();
+    nanoLightsMenu = new NanoMenu.NanoPanelMenu();
 
     Main.panel.addToStatusArea('nano-lights', nanoLightsMenu);
 }

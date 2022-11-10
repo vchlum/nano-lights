@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.nano-lights.indicator-position">
+    <value value="0" nick="center"/>
+    <value value="1" nick="right"/>
+    <value value="2" nick="left"/>
+  </enum>
+  <enum id="org.gnome.shell.extensions.nano-lights.icon-pack">
+    <value value="0" nick="none"/>
+    <value value="1" nick="bright"/>
+    <value value="2" nick="dark"/>
+  </enum>
+  <schema id="org.gnome.shell.extensions.nano-lights" path="/org/gnome/shell/extensions/nano-lights/">
+
+    <!-- See also: https://developer.gnome.org/glib/stable/gvariant-format-strings.html -->
+
+    <key name="force-english" type="b">
+      <default>false</default>
+      <summary>Force english language</summary>
+    </key>
+    <key name="devices" type="a{sa{ss}}">
+      <default>{}</default>
+      <summary>All bridges</summary>
+    </key>
+    <key name="indicator-position" enum="org.gnome.shell.extensions.nano-lights.indicator-position">
+      <default>"right"</default>
+      <summary>Position in Panel</summary>
+    </key>
+    <key name="connection-timeout" type="i">
+      <default>5</default>
+      <summary>Connection timeout</summary>
+    </key>
+    <key name="debug" type="b">
+      <default>false</default>
+      <summary>Enable debugging messages</summary>
+    </key>
+    <key name="icon-pack" enum="org.gnome.shell.extensions.nano-lights.icon-pack">
+      <default>"bright"</default>
+      <summary>Used icon pack</summary>
+    </key>
+    <key name="menu-selected" type="a{sa{si}}">
+      <default>{}</default>
+      <summary>Current selection in menu.</summary>
+    </key>
+  </schema>
+</schemalist>
