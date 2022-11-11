@@ -233,6 +233,8 @@ var NanoPanelMenu = GObject.registerClass({
             Utils.NANOLIGHTS_SETTINGS_MENU_SELECTED
         ).deep_unpack();
 
+        this.setPositionInPanel();
+
         return menuNeedsRebuild;
     }
 
@@ -1440,7 +1442,7 @@ var NanoPanelMenu = GObject.registerClass({
 
         this._nanoMenu["effects"]["object"].visible = false;
         this._nanoMenu["effects"]["object"].menu.removeAll();
-        this._nanoMenu["effects"]["object"].label.text = _("Effects");
+        this._nanoMenu["effects"]["object"].label.text = _("Scenes");
 
         let effectsItems = this._createNanoEffects(data, id);
         for (let item in effectsItems) {
@@ -1635,6 +1637,55 @@ var NanoPanelMenu = GObject.registerClass({
          * this way it is possible - otherwise, the ID is useless
          */
         return Math.round((Math.random()*1000000));
+    }
+
+    /**
+     * Check and change indicator position in menu.
+     * 
+     * @method setPositionInPanel
+     */
+    setPositionInPanel() {
+
+        let children = null;
+
+        if (this._indicatorPositionBackUp === this._indicatorPosition) {
+            return;
+        }
+
+        this.get_parent().remove_actor(this);
+
+        switch (this._indicatorPosition) {
+
+            case NanoMenuPosition.LEFT:
+
+                children = Main.panel._leftBox.get_children();
+                Main.panel._leftBox.insert_child_at_index(
+                    this,
+                    children.length
+                );
+                break;
+
+            case NanoMenuPosition.CENTER:
+
+                children = Main.panel._centerBox.get_children();
+                Main.panel._centerBox.insert_child_at_index(
+                    this,
+                    children.length
+                    );
+                break;
+
+            case NanoMenuPosition.RIGHT:
+
+                children = Main.panel._rightBox.get_children();
+                Main.panel._rightBox.insert_child_at_index(this, 0);
+                break;
+
+            default:
+                children = Main.panel._rightBox.get_children();
+                Main.panel._rightBox.insert_child_at_index(this, 0);
+        }
+
+        this._indicatorPositionBackUp = this._indicatorPosition;
     }
 
     refreshMenu() {
