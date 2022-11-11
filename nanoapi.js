@@ -55,7 +55,8 @@ const Utils = Me.imports.utils;
 var NanoRequestype = {
     NO_RESPONSE_NEED: 0,
     CHANGE_OCCURRED: 1,
-    INFO_DATA: 2
+    INFO_DATA: 2,
+    ALL_EFFECTS: 3
 };
 
 var NanoMessage = class NanoMessage extends Soup.Message {
@@ -79,6 +80,7 @@ var Nano =  GObject.registerClass({
     Signals: {
         "info-data": {},
         "change-occurred": {},
+        "all-effects": {},
         "connection-problem": {},
     }
 }, class Nano extends GObject.Object {
@@ -176,6 +178,11 @@ var Nano =  GObject.registerClass({
                 case NanoRequestype.INFO_DATA:
                     this._deviceData = this._data;
                     this.emit("info-data");
+                    break;
+
+                case NanoRequestype.ALL_EFFECTS:
+                    this._deviceData = this._data;
+                    this.emit("all-effects");
                     break;
 
                 case NanoRequestype.NO_RESPONSE_NEED:
@@ -290,35 +297,48 @@ var Nano =  GObject.registerClass({
     }
 
     getDeviceInfo() {
-        if (this._authToken === undefined) {
-            Utils.logError(`Device ${this.ip} is missing auth token.`);
-            return;
-        }
-
-        let url = this._baseUrl + this._authToken;
+        let url = `${this._baseUrl}${this._authToken}`;
         this._deviceGET(url, NanoRequestype.INFO_DATA);
     }
 
-    setDeviceState(value) {
-        if (this._authToken === undefined) {
-            Utils.logError(`Device ${this.ip} is missing auth token.`);
-            return;
-        }
+    getDeviceAllEffects() {
+        let url = `${this._baseUrl}${this._authToken}/effects`;
+        let data = { "write" : {"command" : "requestAll" }};
 
+        this._devicePUT(url, NanoRequestype.ALL_EFFECTS, data);
+    }
+
+    setDeviceState(value) {
         let url = `${this._baseUrl}${this._authToken}/state`;
         let data = {"on": { "value": value }};
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }
 
-    setDeviceBrightness(value, duration) {
-        if (this._authToken === undefined) {
-            Utils.logError(`Device ${this.ip} is missing auth token.`);
-            return;
-        }
+    setDeviceColor(hue, sat, bri) {
+        let url = `${this._baseUrl}${this._authToken}/state`;
+        let data = {"hue": { "value": hue }, "sat": { "value": sat }, "brightness" : { "value": bri} };
 
+        this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
+    }
+
+    setDeviceTemperature(value) {
+        let url = `${this._baseUrl}${this._authToken}/state`;
+        let data = {"ct": { "value": value }};
+
+        this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
+    }
+
+    setDeviceBrightness(value, duration) {
         let url = `${this._baseUrl}${this._authToken}/state`;
         let data = {"brightness" : { "value": value, "duration": duration }};
+
+        this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
+    }
+
+    setDeviceEffect(effect) {
+        let url = `${this._baseUrl}${this._authToken}/effects`;
+        let data = { "select": effect };
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }

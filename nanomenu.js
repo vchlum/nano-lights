@@ -45,6 +45,7 @@ const Clutter = imports.gi.Clutter;
 const Main = imports.ui.main;
 const GLib = imports.gi.GLib;
 const NanoApi = Me.imports.nanoapi;
+const ColorPicker = Me.imports.colorpicker;
 const Slider = imports.ui.slider;
 
 const Gettext = imports.gettext.domain('nano-lights');
@@ -77,6 +78,8 @@ var NanoRefreshItems = {
 var NanoEvents = {
     SWITCH: 0,
     BRIGHTNESS: 2,
+    COLOR_PICKER: 3,
+    EFFECT: 4,
 }
 
 var NanoPanelMenu = GObject.registerClass({
@@ -96,6 +99,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._rebuildingMenu = false;
         this._instances = {};
         this._infoData = {};
+        this._allEffects = {};
         this._openMenuDefault = null;
         this._nanoMenu = {}
 
@@ -103,15 +107,21 @@ var NanoPanelMenu = GObject.registerClass({
 
         let signal;
 
+        let box = new St.BoxLayout({style_class: 'panel-status-menu-box'});
+
         let icon = new St.Icon({
             gicon : Gio.icon_new_for_string(Me.dir.get_path() + '/media/leaf-lights.svg'),
             style_class : 'system-status-icon',
         });
 
+        this.style = `-natural-hpadding: 6px; -minimum-hpadding: 6px;`;
+
         let iconEffect = this._getIconBriConEffect(NanoIconPack.BRIGHT);
         icon.add_effect(iconEffect);
 
-        this.add_child(icon);
+        this._icon = icon;
+        box.add_child(icon);
+        this.add_child(box);
 
         this._settings = ExtensionUtils.getSettings(Utils.NANOLIGHTS_SETTINGS_SCHEMA);
         signal = this._settings.connect("changed", () => {
@@ -150,11 +160,11 @@ var NanoPanelMenu = GObject.registerClass({
      * @param {Boolean} disconnect all signals
      * @param {Boolean} disconnect temporal signals
      */
-     _appendSignal(signal, object, rebuild, tmp = false) {
+     _appendSignal(signal, object, rebuild, permanent = true) {
         this._signals[signal] = {
             "object": object,
             "rebuild": rebuild,
-            "tmp": tmp
+            "permanent": permanent
         }
     }
 
@@ -241,37 +251,73 @@ var NanoPanelMenu = GObject.registerClass({
             )
         );
     }
+
+    getKnownDevices() {
+        let known = [];
+        for (let id in this._infoData) {
+            if (this._instances[id].isConnected())
+                known.push(id);
+        }
+
+        return known;
+    }
+
     _connectDeviceInstance(id) {
         let signal;
 
         signal = this._instances[id].connect(
             "info-data",
             () => {
-                this._infoData[id] = {};
+                if (this._rebuildingMenu) {
+                    /* menu is being rebuilded */
+                    this._infoData[id] = {};
 
-                if (this._instances[id].isConnected()) {
-                    this._infoData[id] = this._instances[id].getAsyncData();
-                }
+                    if (this._instances[id].isConnected()) {
+                        this._infoData[id] = this._instances[id].getAsyncData();
+                    }
+    
+                    this._checkRebuildReady(id);
+                } else {
+                    /* we think we know all devices */
+                    if (this._infoData[id] === undefined) {
+                        /* we dont...  */
 
-                this._checkRebuildReady(id);
+                        this._infoData[id] = {};
 
-                /*
-                if (this.bridgeInProblem[bridgeid] !== undefined &&
-                    this.bridgeInProblem[bridgeid]) {
-
-                        if ((! this._bridgesInMenuShowed.includes(bridgeid)) &&
-                            (! this._bridgesInMenuShowed.includes(this._defaultBridgeInMenu))
-                            ) {
-
-                            this.rebuildMenuStart();
-                        } else {
-                            this._refreshBridgeMainLabel(bridgeid);
+                        if (this._instances[id].isConnected()) {
+                            this._infoData[id] = this._instances[id].getAsyncData();
                         }
+
+                        /* we rebild menu again */
+                        this._rebuildMenu();
+                    } else {
+                        /* this is common situation */
+                        if (this._instances[id].isConnected()) {
+                            this._infoData[id] = this._instances[id].getAsyncData();
+                        }
+
+                        this.refreshMenu();
+
+                        /* just check if any unkown instance */
+                        let knownDevices = this.getKnownDevices()
+                        for (let testMe in this._instances) {
+                            if (knownDevices.includes(testMe)) {
+                                continue;
+                            }
+
+                            this._checkInstance(testMe);
+                        }
+                    }
                 }
-                this.bridgeInProblem[bridgeid] = false;
-*/
-                if (this._rebuildingMenu === false) {
-                    this.refreshMenu();
+            }
+        );
+        this._appendSignal(signal, this._instances[id], true);
+
+        signal = this._instances[id].connect(
+            "all-effects",
+            () => {
+                if (this._instances[id].isConnected()) {
+                    this._allEffects[id] = this._instances[id].getAsyncData();
                 }
             }
         );
@@ -281,6 +327,10 @@ var NanoPanelMenu = GObject.registerClass({
             "change-occurred",
             () => {
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._duration * 1000 + 100, () => {
+                    /**
+                     * we need to delay this check because
+                     * the transition takes 'duration' seconds
+                     **/
                     this._checkInstance(id);
                 });                
             }
@@ -306,10 +356,11 @@ var NanoPanelMenu = GObject.registerClass({
     }
 
     checkInstances() {
-        for (let i in this._instances) {
+        for (let id in this._instances) {
             /* this will invoke this.refreshMenu via "info-data" */
-            this._checkInstance(i);
-    }
+            this._checkInstance(id);
+            this._instances[id].getDeviceAllEffects();
+        }
     }
 
     _checkInstance(id) {
@@ -608,14 +659,15 @@ var NanoPanelMenu = GObject.registerClass({
      * @param {Number} groupid
      * @param {Boolean} tmp: true for tmp refresh
      */
-     _createSwitchColor(switchItem, data, id) {
+     _createSwitchColor(switchItem, data, id, permanent = true) {
 
         let path = `${this._rndID()}::device::${id}::color`;
 
         this.refreshMenuObjects[path] = {
             "id": id,
             "object":switchItem,
-            "type": NanoRefreshItems.SWITCH_COLOR
+            "type": NanoRefreshItems.SWITCH_COLOR,
+            "permanent": permanent
         }
     }
 
@@ -630,15 +682,55 @@ var NanoPanelMenu = GObject.registerClass({
      * @param {Number} groupid
      * @param {Boolean} tmp: true for tmp refresh
      */
-    _createSliderColor(slider, data, id) {
+    _createSliderColor(slider, data, id, permanent = true) {
 
         let path = `${this._rndID()}::device::${id}::color`;
 
         this.refreshMenuObjects[path] = {
             "id": id,
             "object":slider,
-            "type": NanoRefreshItems.SLIDER_COLOR
+            "type": NanoRefreshItems.SLIDER_COLOR,
+            "permanent": permanent
         }
+    }
+
+    _getEffectColor(data, name) {
+        if (data["animations"] === undefined) {
+            return [0, 0, 0];
+        }
+
+        for (let i in data["animations"]) {
+            let effect = data["animations"][i];
+
+            if (effect["animName"] === name) {
+                let counter = 0;
+                let [r, g, b ] = [0, 0, 0];
+
+                for (let color in effect["palette"]) {
+                    let [subR, subG, subB] = Utils.hslToRgb(
+                        effect["palette"][color]["hue"] / 360.0,
+                        effect["palette"][color]["saturation"] / 100.0,
+                        //effect["palette"][color]["brightness"] / 100.0,
+                        0.5
+                    );
+
+                    if (subR > 0 || subG > 0 || subB > 0) {
+                        r = r + subR;
+                        g = g + subG;
+                        b = b + subB;
+                        counter++;
+                    }
+                }
+
+                return [
+                    Math.round(r / counter),
+                    Math.round(g / counter),
+                    Math.round(b / counter)
+                ];
+            }
+        }
+
+        return [0, 0, 0];
     }
 
     _getColor(data, id) {
@@ -666,7 +758,11 @@ var NanoPanelMenu = GObject.registerClass({
                 return [0, 0, 0];
             }
 
-            return [r / counter, g / counter, b / counter];
+            return [
+                Math.round(r / counter),
+                Math.round(g / counter),
+                Math.round(b / counter)
+            ];
         }
 
         if (data[id] === undefined) {
@@ -681,11 +777,47 @@ var NanoPanelMenu = GObject.registerClass({
             return [0, 0, 0];
         }
 
-        let h = data[id]["state"]["hue"]["value"] / (1.0 * data[id]["state"]["hue"]["max"]);
-        let s = data[id]["state"]["sat"]["value"] / 100.0;
-        //let l = data[id]["state"]["brightness"]["value"] / 100.0;
+        if (data[id]["state"]["colorMode"]=== undefined) {
+            return [0, 0, 0];
+        }
 
-        return Utils.hslToRgb(h, s, 0.5);
+        let color = [0, 0, 0];
+
+        switch (data[id]["state"]["colorMode"]) {
+            case "hs":
+                let h = data[id]["state"]["hue"]["value"] / (1.0 * data[id]["state"]["hue"]["max"]);
+                let s = data[id]["state"]["sat"]["value"] / 100.0;
+                //let l = data[id]["state"]["brightness"]["value"] / 100.0;
+                color =  Utils.hslToRgb(h, s, 0.5);
+                break;
+
+            case "ct":
+                let kelvin = data[id]["state"]["ct"]["value"];
+                color = Utils.kelvinToRGB(kelvin);
+                break;
+
+            case "effect":
+                if (this._allEffects[id] === undefined) {
+                    color = [0, 0, 0];
+                    break;
+                }
+
+                color = this._getEffectColor(
+                    this._allEffects[id],
+                    data[id]["effects"]["select"]
+                );
+                break;
+
+            default:
+                color = [0, 0, 0];
+                break;
+        }
+
+        return [
+            Math.round(color[0]),
+            Math.round(color[1]),
+            Math.round(color[2])
+        ];
     }
 
     _getBrightness(data, id) {
@@ -763,7 +895,7 @@ var NanoPanelMenu = GObject.registerClass({
      * @param {Number} groupid
      * @return {Object} Brightness slider
      */
-     _createDeviceSlider(data, id) {
+     _createDeviceSlider(data, id, permanent = true) {
 
         let path = "";
         let themeContext = St.ThemeContext.get_for_stage(global.stage);
@@ -775,7 +907,7 @@ var NanoPanelMenu = GObject.registerClass({
         slider.set_x_expand(false);
         slider.value = 0;
 
-        this._createSliderColor(slider, data, id);
+        this._createSliderColor(slider, data, id, permanent);
 
         path = `${this._rndID()}::device::${id}::state::brightness`;
 
@@ -795,13 +927,14 @@ var NanoPanelMenu = GObject.registerClass({
         this.refreshMenuObjects[path] = {
             "id": id,
             "object":slider,
-            "type": NanoRefreshItems.SLIDER_BRIGHTNESS
+            "type": NanoRefreshItems.SLIDER_BRIGHTNESS,
+            "permanent": permanent
         }
 
         return slider;
     }
 
-    _createDeviceSwitch(data, id) {
+    _createDeviceSwitch(data, id, permanent = true) {
         let switchBox;
         let switchButton;
 
@@ -834,10 +967,11 @@ var NanoPanelMenu = GObject.registerClass({
         this.refreshMenuObjects[path] = {
             "id": id,
             "object":switchBox,
-            "type": NanoRefreshItems.SWITCH_VALUE
+            "type": NanoRefreshItems.SWITCH_VALUE,
+            "permanent": permanent
         }
 
-        this._createSwitchColor(switchBox, data, id);
+        this._createSwitchColor(switchBox, data, id, permanent);
 
         return switchButton;
     }
@@ -848,7 +982,7 @@ var NanoPanelMenu = GObject.registerClass({
         let name = _("All")
 
         if (id !== "all") {
-            name = data[id]["name"];
+            name = this._instances[id].name;
         }
 
         item = new PopupMenu.PopupMenuItem(name);
@@ -885,10 +1019,15 @@ var NanoPanelMenu = GObject.registerClass({
                 return item.originalActivate(event);
             }
 
-            this._menuSelected["nano"] = {"device": id}
-            this.writeMenuSelectedSettings();
+            if (this._menuSelected["nano"] !== undefined &&
+                this._menuSelected["nano"]["device"] === id) {
+
+                return item.originalActivate(event);
+            }
 
             this._selectNanoDevice(data, id);
+            this._selectNanoControl(data, id);
+            this._selectNanoEffects(data, id);
 
             this._nanoMenu["devices"]["object"].menu.open(true);
 
@@ -906,7 +1045,6 @@ var NanoPanelMenu = GObject.registerClass({
     }
 
     _createNanoMenuDevices(data) {
-        let menuItems = [];
         let items = [];
 
         let deviceSubMenu = new PopupMenu.PopupSubMenuMenuItem(
@@ -926,7 +1064,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["devices"] = {}
         this._nanoMenu["devices"]["object"] = deviceSubMenu;
         this._nanoMenu["devices"]["icon"] = null;
-        this._nanoMenu["devices"]["box"] = itemBox;
+        this._nanoMenu["devices"]["box"] = itemBox; 
         this._nanoMenu["devices"]["switch"] = null;
         this._nanoMenu["devices"]["slider"] = null;
         this._nanoMenu["devices"]["undo"] = null;
@@ -948,8 +1086,6 @@ var NanoPanelMenu = GObject.registerClass({
                 this._handleLastOpenedMenu(menu, isOpen);
             }
         );
-
-        menuItems.push(deviceSubMenu);
 
         items = items.concat(
             this._createNanoDevice(data) // item for all device
@@ -974,17 +1110,65 @@ var NanoPanelMenu = GObject.registerClass({
             deviceSubMenu.menu.addMenuItem(items[i]);
         }
 
-        return menuItems;
+        return [deviceSubMenu];
     }
 
     _createNanoMenuControl(data) {
-        let items = [];
-        return items;
+        let controlSubMenu = new PopupMenu.PopupSubMenuMenuItem(
+            _("Select a device")
+        );
+        
+        /* disable closing menu on item activated */
+        controlSubMenu.menu.itemActivated = (animate) => {};
+
+        controlSubMenu.menu.connect(
+            'open-state-changed',
+            (menu, isOpen) => {
+                this._handleLastOpenedMenu(menu, isOpen);
+            }
+        );
+
+        this._nanoMenu["control"] = {}
+        this._nanoMenu["control"]["object"] = controlSubMenu;
+        this._nanoMenu["control"]["icon"] = null;
+        this._nanoMenu["control"]["box"] = null; 
+        this._nanoMenu["control"]["switch"] = null;
+        this._nanoMenu["control"]["slider"] = null;
+        this._nanoMenu["control"]["undo"] = null;
+        this._nanoMenu["control"]["selected"] = null;
+
+        controlSubMenu.visible = false;
+
+        return [controlSubMenu];
     }
 
-    _createNanoMenuScenes(data) {
-        let items = [];
-        return items;
+    _createNanoMenuEffects(data) {
+        let effectsSubMenu = new PopupMenu.PopupSubMenuMenuItem(
+            _("Select a device")
+        );
+
+        /* disable closing menu on item activated */
+        effectsSubMenu.menu.itemActivated = (animate) => {};
+
+        this._nanoMenu["effects"] = {}
+        this._nanoMenu["effects"]["object"] = effectsSubMenu;
+        this._nanoMenu["effects"]["icon"] = null;
+        this._nanoMenu["effects"]["box"] = null; 
+        this._nanoMenu["effects"]["switch"] = null;
+        this._nanoMenu["effects"]["slider"] = null;
+        this._nanoMenu["effects"]["undo"] = null;
+        this._nanoMenu["effects"]["selected"] = null;
+
+        effectsSubMenu.menu.connect(
+            'open-state-changed',
+            (menu, isOpen) => {
+                this._handleLastOpenedMenu(menu, isOpen);
+            }
+        );
+
+        effectsSubMenu.visible = false;
+
+        return [effectsSubMenu];
     }
 
     _createNanoMenu() {
@@ -1003,7 +1187,7 @@ var NanoPanelMenu = GObject.registerClass({
         );
 
         items = items.concat(
-            this._createNanoMenuScenes(this._infoData)
+            this._createNanoMenuEffects(this._infoData)
         );
 
         return items;
@@ -1067,10 +1251,207 @@ var NanoPanelMenu = GObject.registerClass({
     }
 
     _selectNanoDevice(data, id) {
+        /**
+         * remove old refreshing links
+         */
+        for (let path in this.refreshMenuObjects) {
+            if (!this.refreshMenuObjects[path]["permanent"]) {
+                delete this.refreshMenuObjects[path];
+            }
+        }
+
         if(Object.keys(data).length === 0) {
             Utils.logDebug(`Can not select device. No data available.`);
         }
 
+        this._menuSelected["nano"] = {"device": id}
+        this.writeMenuSelectedSettings();
+
+        /**
+         * remove old selection
+         */
+        if (this._nanoMenu["devices"]["icon"] !== null) {
+            this._nanoMenu["devices"]["object"].remove_child(
+                this._nanoMenu["devices"]["icon"]
+            );
+
+            this._nanoMenu["devices"]["icon"] = null;
+        }
+
+        if (this._nanoMenu["devices"]["switch"] !== null) {
+            this._nanoMenu["devices"]["object"].remove_child(
+                this._nanoMenu["devices"]["switch"]
+            );
+
+            this._nanoMenu["devices"]["switch"] = null;
+        }
+
+        if (this._nanoMenu["devices"]["slider"] !== null) {
+            this._nanoMenu["devices"]["box"].remove_child(
+                this._nanoMenu["devices"]["slider"]
+            );
+
+            this._nanoMenu["devices"]["slider"] = null;
+        }
+
+        /**
+         * set current selection
+         */
+
+        let name = _("All")
+
+        if (id !== "all") {
+            name = this._instances[id].name;
+        }
+        this._nanoMenu["devices"]["object"].label.text = name;
+
+        let slider = this._createDeviceSlider(data, id, false);
+        this._nanoMenu["devices"]["box"].insert_child_at_index(slider, 1);
+        this._nanoMenu["devices"]["slider"] = slider;
+
+        let itemSwitch = this._createDeviceSwitch(data, id, false);
+        this._nanoMenu["devices"]["object"].insert_child_at_index(
+            itemSwitch,
+            this._nanoMenu["devices"]["object"].get_children().length - 1
+        );
+        this._nanoMenu["devices"]["switch"] = itemSwitch;
+
+        this.refreshMenu();
+    }
+
+    _createNanoEffectsItems(effectsArray, id) {
+        let res = [];
+
+        for (let effect of effectsArray) {
+            let effectItem = new PopupMenu.PopupMenuItem(
+                effect
+            );
+
+            effectItem.x_align = Clutter.ActorAlign.FILL;
+            effectItem.x_expand = true;
+            effectItem.label.x_align = Clutter.ActorAlign.CENTER;
+            effectItem.label.set_x_expand(true);
+
+            let path = `${this._rndID()}::device::${id}::switch`;
+
+            effectItem.connect(
+                "button-press-event",
+                this._menuEventHandler.bind(
+                    this,
+                    {
+                        "path": path,
+                        "id": id,
+                        "object":effect,
+                        "type": NanoEvents.EFFECT
+                    }
+                )
+            );
+
+            res.push(effectItem);
+        }
+
+        return res;
+    }
+
+    _createNanControl(data, id) {
+        let path = "";
+        let controlItem = new PopupMenu.PopupMenuItem("");
+        controlItem.x_align = Clutter.ActorAlign.CENTER;
+        controlItem.remove_child(controlItem.label);
+
+        let colorPickerBox = new ColorPicker.ColorPickerBox({
+            useColorWheel: true,
+            useWhiteBox: true
+        });
+
+        controlItem.add(colorPickerBox.createColorBox());
+
+        path = `${this._rndID()}::device::${id}::color`;
+        colorPickerBox.connect(
+            "color-picked",
+                this._menuEventHandler.bind(
+                    this,
+                    {
+                        "path": path,
+                        "id": id,
+                        "object":colorPickerBox,
+                        "type": NanoEvents.COLOR_PICKER
+                    }
+                )
+        );
+
+        return [controlItem];
+    }
+
+    _createNanoEffects(data, id) {
+        if (id === "all") {
+            let effects = [];
+            for (let i in data) {
+                if (data[i]["effects"] === undefined) {
+                    continue;
+                }
+
+                if (effects.length === 0) {
+                    for (let j of data[i]["effects"]["effectsList"]) {
+                        effects.push(j);
+                    }
+
+                    continue;
+                }
+
+                effects = effects.filter(
+                    value => data[i]["effects"]["effectsList"].includes(value)
+                );
+            }
+
+            return this._createNanoEffectsItems(effects, id);
+        }
+
+        if (data[id] === undefined) {
+            return [];
+        }
+
+        if (data[id]["effects"] === undefined) {
+            return [];
+        }
+
+        return this._createNanoEffectsItems(data[id]["effects"]["effectsList"], id);
+    }
+
+    _selectNanoControl(data, id) {
+
+        this._nanoMenu["control"]["object"].visible = false;
+        this._nanoMenu["control"]["object"].menu.removeAll();
+        this._nanoMenu["control"]["object"].label.text = _("Color & Temperature")
+
+        let controlItems = this._createNanControl(data, id);
+        for (let item in controlItems) {
+            this._nanoMenu["control"]["object"].menu.addMenuItem(controlItems[item]);
+        }
+
+        if (controlItems.length === 0) {
+            this._nanoMenu["control"]["object"].visible = false;
+        } else {
+            this._nanoMenu["control"]["object"].visible = true;
+        }
+    }
+
+    _selectNanoEffects(data, id) {
+
+        this._nanoMenu["effects"]["object"].visible = false;
+        this._nanoMenu["effects"]["object"].menu.removeAll();
+        this._nanoMenu["effects"]["object"].label.text = _("Effects");
+
+        let effectsItems = this._createNanoEffects(data, id);
+        for (let item in effectsItems) {
+            this._nanoMenu["effects"]["object"].menu.addMenuItem(effectsItems[item]);
+        }
+
+        if (effectsItems.length === 0) {
+            this._nanoMenu["effects"]["object"].visible = false;
+        } else {
+            this._nanoMenu["effects"]["object"].visible = true;
+        }
     }
 
     /**
@@ -1078,7 +1459,7 @@ var NanoPanelMenu = GObject.registerClass({
      * 
      * @method rebuildMenuStart
      */
-     rebuildMenuStart() {
+    rebuildMenuStart() {
 
         Utils.logDebug("Rebuilding menu started.");
 
@@ -1148,7 +1529,7 @@ var NanoPanelMenu = GObject.registerClass({
             this.menu.addMenuItem(nanoMenu[item]);
         }
 
-        if (nanoMenu.length == 0) {
+        if (nanoMenu.length === 0) {
             for (let item of this._createSettingItems()) {
                 this.menu.addMenuItem(item);
             }
@@ -1211,6 +1592,29 @@ var NanoPanelMenu = GObject.registerClass({
                 this._instances[id].setDeviceBrightness(value, this._duration);
 
                 break;
+
+            case NanoEvents.COLOR_PICKER:
+
+                if (object.colorTemperature > 0) {
+                    value = object.colorTemperature;
+                    this._instances[id].setDeviceTemperature(parseInt(value));
+                    break;
+                }
+
+                let [h, s, l] = Utils.rgbToHsl(object.r, object.g, object.b);
+
+                this._instances[id].setDeviceColor(
+                    Math.round(h * 360),
+                    Math.round(s * 100),
+                    Math.round(l * 100)
+                );
+
+                break;
+
+            case NanoEvents.EFFECT:
+                this._instances[id].setDeviceEffect(object);
+                break;
+
             default:
                 Utils.logDebug(`Menu event handler - uknown type ${type}`)
         }
@@ -1272,6 +1676,14 @@ var NanoPanelMenu = GObject.registerClass({
                         break;
                     }
 
+                    if (value[0] === 0 &&
+                        value[1] === 0 &&
+                        value[2] === 0) {
+
+                        object.clear_effects();
+                        break;
+                    }
+
                     this._setSwitchColor(object, value);
 
                     break;
@@ -1292,6 +1704,14 @@ var NanoPanelMenu = GObject.registerClass({
                     if (this._getDeviceOn(this._infoData, id)) {
                         value = this._getColor(this._infoData, id);
                     } else {
+                        object.style = null;
+                        break;
+                    }
+
+                    if (value[0] === 0 &&
+                        value[1] === 0 &&
+                        value[2] === 0) {
+
                         object.style = null;
                         break;
                     }
