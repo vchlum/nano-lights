@@ -54,9 +54,11 @@ const Utils = Me.imports.utils;
 
 var NanoRequestype = {
     NO_RESPONSE_NEED: 0,
-    CHANGE_OCCURRED: 1,
-    INFO_DATA: 2,
-    ALL_EFFECTS: 3
+    SELF_CHECK: 1,
+    AUTHORIZATION: 2,
+    CHANGE_OCCURRED: 3,
+    INFO_DATA: 4,
+    ALL_EFFECTS: 5
 };
 
 var NanoMessage = class NanoMessage extends Soup.Message {
@@ -78,6 +80,8 @@ var Nano =  GObject.registerClass({
         "ip": GObject.ParamSpec.string("ip", "ip", "ip", GObject.ParamFlags.READWRITE, null),
     },
     Signals: {
+        "authorized": {},
+        "self-check": {},
         "info-data": {},
         "change-occurred": {},
         "all-effects": {},
@@ -85,14 +89,16 @@ var Nano =  GObject.registerClass({
     }
 }, class Nano extends GObject.Object {
     _init(props={}) {
+        this._baseUrl = "http://"
+        this._defaultPort = "16021"
+
         super._init(props);
 
-        this._port = 16021
+        this._authToken = "";
         this._connected = false;
         this._deviceData = undefined;
 
         this.name = "unknown name";
-        this.authToken = undefined;
 
         this._deviceSession = Soup.Session.new();
         this._deviceSession.timeout = 5;
@@ -108,7 +114,7 @@ var Nano =  GObject.registerClass({
 
     set ip(value) {
         this._ip = value;
-        this._baseUrl = `http://${this._ip}:${this._port}/api/v1/`;
+        this._baseUrl = `http://${this._ip}:${this._defaultPort}/api/v1`;
     }
 
     get ip() {
@@ -127,8 +133,13 @@ var Nano =  GObject.registerClass({
     }
 
     update(data) {
+
         if (data["ip"] != undefined){
             this.ip = data["ip"];
+        }
+
+        if (data["hostname"] != undefined){
+            this.name = data["hostname"];
         }
 
         if (data["name"] != undefined){
@@ -141,8 +152,24 @@ var Nano =  GObject.registerClass({
 
     }
 
+    export() {
+        let data = {};
+
+        data[this._id] = {'ip': this._ip, 'port': this._defaultPort, 'name': this.name, 'auth_token': this._authToken};
+
+        return data;
+    }
+
     isConnected() {
         return this._connected;
+    }
+
+    isAuthenticated() {
+        if (this._authToken !== "") {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -169,6 +196,17 @@ var Nano =  GObject.registerClass({
             }
 
             switch (requestNanoType) {
+                case NanoRequestype.AUTHORIZATION:
+                    this._deviceData = this._data;
+                    this._authToken = this._deviceData["auth_token"];
+                    this.emit("authorized");
+                    break;
+
+                case NanoRequestype.SELF_CHECK:
+                    this.id = this._data["serialNo"];
+                    this._connected = true;
+                    this.emit("self-check");
+                    break;
 
                 case NanoRequestype.CHANGE_OCCURRED:
                     this._deviceData = this._data;
@@ -251,7 +289,7 @@ var Nano =  GObject.registerClass({
      * @param {Object} input data
      * @return {Object} JSON with response
      */
-    _devicePOST(url, requestNanoType, data) {
+    _devicePOST(url, requestNanoType, data = null) {
 
         this._requestJson("POST", url, requestNanoType, data);
     }
@@ -291,56 +329,78 @@ var Nano =  GObject.registerClass({
      * @param {Boolean} url to be requested
      * @return {Object} JSON with response
      */
-     _deviceDEL(url, requestNanoType) {
+     _deviceDELETE(url, requestNanoType) {
 
-        this._requestJson("DEL", url, requestNanoType, null);
+        this._requestJson("DELETE", url, requestNanoType, null);
+    }
+
+    authorizate() {
+        let url = `${this._baseUrl}/new`;
+
+        this._devicePOST(url, NanoRequestype.AUTHORIZATION);
+    }
+
+    selfCheck() {
+        let url = `${this._baseUrl}/${this._authToken}`;
+
+        this._deviceGET(url, NanoRequestype.SELF_CHECK); 
     }
 
     getDeviceInfo() {
-        let url = `${this._baseUrl}${this._authToken}`;
+        let url = `${this._baseUrl}/${this._authToken}`;
+
         this._deviceGET(url, NanoRequestype.INFO_DATA);
     }
 
     getDeviceAllEffects() {
-        let url = `${this._baseUrl}${this._authToken}/effects`;
+        let url = `${this._baseUrl}/${this._authToken}/effects`;
         let data = { "write" : {"command" : "requestAll" }};
 
         this._devicePUT(url, NanoRequestype.ALL_EFFECTS, data);
     }
 
     setDeviceState(value) {
-        let url = `${this._baseUrl}${this._authToken}/state`;
+        let url = `${this._baseUrl}/${this._authToken}/state`;
         let data = {"on": { "value": value }};
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }
 
     setDeviceColor(hue, sat, bri) {
-        let url = `${this._baseUrl}${this._authToken}/state`;
+        let url = `${this._baseUrl}/${this._authToken}/state`;
         let data = {"hue": { "value": hue }, "sat": { "value": sat }, "brightness" : { "value": bri} };
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }
 
     setDeviceTemperature(value) {
-        let url = `${this._baseUrl}${this._authToken}/state`;
+        let url = `${this._baseUrl}/${this._authToken}/state`;
         let data = {"ct": { "value": value }};
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }
 
     setDeviceBrightness(value, duration) {
-        let url = `${this._baseUrl}${this._authToken}/state`;
+        let url = `${this._baseUrl}/${this._authToken}/state`;
         let data = {"brightness" : { "value": value, "duration": duration }};
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }
 
     setDeviceEffect(effect) {
-        let url = `${this._baseUrl}${this._authToken}/effects`;
+        let url = `${this._baseUrl}/${this._authToken}/effects`;
         let data = { "select": effect };
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
+    }
+
+    deleteDeviceToken() {
+        let url = `${this._baseUrl}/${this._authToken}`;
+
+        this._deviceDELETE(url, NanoRequestype.NO_RESPONSE_NEED);
+
+        this._authToken = "";
+        this._connected = false;
     }
 
     /**

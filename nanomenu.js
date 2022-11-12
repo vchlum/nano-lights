@@ -103,7 +103,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._openMenuDefault = null;
         this._nanoMenu = {}
 
-        this._duration = 1;
+        this._brightnessDuration = 1;
 
         let signal;
 
@@ -144,9 +144,6 @@ var NanoPanelMenu = GObject.registerClass({
         });
         this._appendSignal(signal, this.menu, false);
 
-        Utils.debug = true;
-        Utils.logDebug(JSON.stringify(this.devices));
-
         this.rebuildMenuStart();
     }
 
@@ -182,15 +179,17 @@ var NanoPanelMenu = GObject.registerClass({
         /**
          * this.devices needs rebuild
          */
-         tmpVal = JSON.stringify(this.devices);
+        tmpVal = JSON.stringify(this.devices);
 
-         this.devices = this._settings.get_value(
-             Utils.NANOLIGHTS_SETTINGS_DEVICES
-         ).deep_unpack();
+        this.devices = this._settings.get_value(
+            Utils.NANOLIGHTS_SETTINGS_DEVICES
+        ).deep_unpack();
  
-         if (tmpVal !== JSON.stringify(this.devices)) {
-             menuNeedsRebuild = true;
-         }
+        if (tmpVal !== JSON.stringify(this.devices)) {
+            menuNeedsRebuild = true;
+            this._instances = {};
+            this._infoData = {};
+        }
 
         /**
          * debug doesn't need rebuild
@@ -234,6 +233,10 @@ var NanoPanelMenu = GObject.registerClass({
         ).deep_unpack();
 
         this.setPositionInPanel();
+
+        for (let id in this._instances) {
+            this._instances[id].setConnectionTimeout(this._connectionTimeout);
+        }
 
         return menuNeedsRebuild;
     }
@@ -328,7 +331,7 @@ var NanoPanelMenu = GObject.registerClass({
         signal = this._instances[id].connect(
             "change-occurred",
             () => {
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._duration * 1000 + 100, () => {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._brightnessDuration * 1000 + 100, () => {
                     /**
                      * we need to delay this check because
                      * the transition takes 'duration' seconds
@@ -347,10 +350,13 @@ var NanoPanelMenu = GObject.registerClass({
         }
 
         if (this._instances[id] === undefined) {
+
             this._instances[id] = new NanoApi.Nano({
                 id: id,
                 ip: this.devices[id]["ip"]
             });
+
+            this._instances[id].setConnectionTimeout(this._connectionTimeout);
             this._connectDeviceInstance(id);
         }
 
@@ -549,6 +555,7 @@ var NanoPanelMenu = GObject.registerClass({
         signal = refreshMenuItem.connect(
             'button-press-event',
             () => {
+                this._instances = {};
                 rebuildFunction();
             }
         );
@@ -591,7 +598,7 @@ var NanoPanelMenu = GObject.registerClass({
      * @param {Boolean} true for reduced number of items
      * @return {Object} array of menu items
      */
-    _createSettingItems(reduced) {
+    _createSettingItems() {
         let items = [];
 
         let settingsItems = this._createDefaultSettingsItems(
@@ -602,6 +609,36 @@ var NanoPanelMenu = GObject.registerClass({
         }
 
         return items;
+    }
+
+    _createNanoServiceMenu() {
+        let nanoSubMenu = new PopupMenu.PopupSubMenuMenuItem(
+            _("Nano Lights")
+        );
+
+        /* disable closing menu on item activated */
+        nanoSubMenu.menu.itemActivated = (animate) => {};
+
+        nanoSubMenu.menu.connect(
+            'open-state-changed',
+            (menu, isOpen) => {
+                this._handleLastOpenedMenu(menu, isOpen);
+            }
+        );
+
+        if (this._iconPack !== NanoIconPack.NONE) {
+            let icon = this._getIconByPath(Me.dir.get_path() + '/media/leaf-lights.svg');
+
+            if (icon !== null){
+                nanoSubMenu.insert_child_at_index(icon, 1);
+            }
+        }
+
+        for (let item of this._createSettingItems()) {
+            nanoSubMenu.menu.addMenuItem(item);
+        }
+
+        return [nanoSubMenu];
     }
 
     /**
@@ -1027,21 +1064,18 @@ var NanoPanelMenu = GObject.registerClass({
                 return item.originalActivate(event);
             }
 
-            this._selectNanoDevice(data, id);
-            this._selectNanoControl(data, id);
-            this._selectNanoEffects(data, id);
+            this._selectNanoMenu(data, id);
 
-            this._nanoMenu["devices"]["object"].menu.open(true);
-
-            if (this._nanoMenu["devices"]["hidden-item"] !== undefined) {
-                this._nanoMenu["devices"]["hidden-item"].visible = true;
+            if (this._nanoMenu["effects"]["object"].visible) {
+                this._nanoMenu["effects"]["object"].menu.open(true);
+            } else if (this._nanoMenu["control"]["object"].visible) {
+                this._nanoMenu["control"]["object"].menu.open(true);
             }
-
-            item.visible = false;
-            this._nanoMenu["devices"]["hidden-item"] = item;
 
             return item.originalActivate(event);
         }
+
+        this._nanoMenu["devices"]["menu-items"][id] = item;
 
         return [item];
     }
@@ -1071,6 +1105,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["devices"]["slider"] = null;
         this._nanoMenu["devices"]["undo"] = null;
         this._nanoMenu["devices"]["selected"] = null;
+        this._nanoMenu["devices"]["menu-items"] = {};
 
         this._openMenuDefault = deviceSubMenu.menu;
 
@@ -1266,7 +1301,7 @@ var NanoPanelMenu = GObject.registerClass({
             Utils.logDebug(`Can not select device. No data available.`);
         }
 
-        this._menuSelected["nano"] = {"device": id}
+        this._menuSelected["nano"] = {"device": id};
         this.writeMenuSelectedSettings();
 
         /**
@@ -1321,6 +1356,27 @@ var NanoPanelMenu = GObject.registerClass({
         this.refreshMenu();
     }
 
+
+    _selectNanoMenu(data, id) {
+        if (this._nanoMenu["devices"]["menu-items"][id] === undefined) {
+            Utils.logDebug("Can not select menu. Unknown menu id.");
+            return;
+        }
+
+        let item = this._nanoMenu["devices"]["menu-items"][id];
+
+        this._selectNanoDevice(data, id);
+        this._selectNanoControl(data, id);
+        this._selectNanoEffects(data, id);
+
+        if (this._nanoMenu["devices"]["hidden-item"] !== undefined) {
+            this._nanoMenu["devices"]["hidden-item"].visible = true;
+        }
+
+        item.visible = false;
+        this._nanoMenu["devices"]["hidden-item"] = item;
+    }
+
     _createNanoEffectsItems(effectsArray, id) {
         let res = [];
 
@@ -1355,7 +1411,7 @@ var NanoPanelMenu = GObject.registerClass({
         return res;
     }
 
-    _createNanControl(data, id) {
+    _createNanoControl(data, id) {
         let path = "";
         let controlItem = new PopupMenu.PopupMenuItem("");
         controlItem.x_align = Clutter.ActorAlign.CENTER;
@@ -1426,7 +1482,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["control"]["object"].menu.removeAll();
         this._nanoMenu["control"]["object"].label.text = _("Color & Temperature")
 
-        let controlItems = this._createNanControl(data, id);
+        let controlItems = this._createNanoControl(data, id);
         for (let item in controlItems) {
             this._nanoMenu["control"]["object"].menu.addMenuItem(controlItems[item]);
         }
@@ -1468,6 +1524,8 @@ var NanoPanelMenu = GObject.registerClass({
         this._rebuildingMenu = true;
         this._rebuildingMenuDevice = {};
         this._mainLabel = {};
+        this._infoData = {};
+        this._nanoMenu = {}
 
         this.disconnectSignals(false);
 
@@ -1527,6 +1585,15 @@ var NanoPanelMenu = GObject.registerClass({
 
         let nanoMenu = this._createNanoMenu();
 
+        if (nanoMenu.length > 0) {
+            for (let item of this._createNanoServiceMenu()) {
+                this.menu.addMenuItem(item);
+            }
+            this.menu.addMenuItem(
+                new PopupMenu.PopupSeparatorMenuItem()
+            );
+        }
+
         for (let item in nanoMenu) {
             this.menu.addMenuItem(nanoMenu[item]);
         }
@@ -1535,6 +1602,18 @@ var NanoPanelMenu = GObject.registerClass({
             for (let item of this._createSettingItems()) {
                 this.menu.addMenuItem(item);
             }
+        }
+
+        if (this._menuSelected["nano"] !== undefined &&
+            this._menuSelected["nano"]["device"] !== undefined &&
+            this._infoData[this._menuSelected["nano"]["device"]] !== undefined) {
+
+            this._selectNanoMenu(
+                this._infoData,
+                this._menuSelected["nano"]["device"]
+            );
+        } else {
+            this._selectNanoMenu(this._infoData, "all");
         }
     }
 
@@ -1559,6 +1638,7 @@ var NanoPanelMenu = GObject.registerClass({
             for (let subId in this._instances) {
                 data["id"] = subId;
                 this._menuEventHandler(data);
+                data["id"] = "all"; /* will be preserved for next call, we need to return 'all' */
             }
 
             return;
@@ -1591,7 +1671,10 @@ var NanoPanelMenu = GObject.registerClass({
 
                 value = Math.round(object.value * 100);
 
-                this._instances[id].setDeviceBrightness(value, this._duration);
+                this._instances[id].setDeviceBrightness(
+                    value,
+                    this._brightnessDuration
+                );
 
                 break;
 

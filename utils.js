@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * utils hue-lights
- * JavaScript Gnome extension for Philips Hue lights and bridges.
+ * utils nano-lights
+ * JavaScript Gnome extension for Nanoleaf.
  *
  * @author Václav Chlumský
  * @copyright Copyright 2022, Václav Chlumský.
@@ -49,7 +49,7 @@ var NANOLIGHTS_SETTINGS_CONNECTION_TIMEOUT = "connection-timeout";
 var NANOLIGHTS_SETTINGS_DEBUG = "debug";
 var NANOLIGHTS_SETTINGS_ICONPACK = "icon-pack";
 var NANOLIGHTS_SETTINGS_MENU_SELECTED = "menu-selected";
-var NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{si}}";
+var NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{ss}}";
 
 const [major] = Config.PACKAGE_VERSION.split(".");
 var shellVersion = Number.parseInt(major);

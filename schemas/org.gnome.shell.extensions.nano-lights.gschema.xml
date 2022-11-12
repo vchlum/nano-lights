@@ -38,7 +38,7 @@
       <default>"bright"</default>
       <summary>Used icon pack</summary>
     </key>
-    <key name="menu-selected" type="a{sa{si}}">
+    <key name="menu-selected" type="a{sa{ss}}">
       <default>{}</default>
       <summary>Current selection in menu.</summary>
     </key>
