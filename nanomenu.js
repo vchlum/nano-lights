@@ -365,9 +365,10 @@ var NanoPanelMenu = GObject.registerClass({
 
     checkInstances() {
         for (let id in this._instances) {
+            this._instances[id].getDeviceAllEffects();
+
             /* this will invoke this.refreshMenu via "info-data" */
             this._checkInstance(id);
-            this._instances[id].getDeviceAllEffects();
         }
     }
 
@@ -1377,6 +1378,57 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["devices"]["hidden-item"] = item;
     }
 
+    checkEffectIconExist(type) {
+        switch (type) {
+            case "rhythm": 
+                return this._getGnomeIcon("audio-x-generic");
+            case "color":
+                return this._getGnomeIcon("applications-graphics");
+            default:
+                break;
+        }
+
+        return null;
+    }
+
+    trytoGetIconOfEffect(id, effectName) {
+        if (id === "all") {
+            for (let i in this._allEffects) {
+                if (this._allEffects[i]["animations"] === undefined) {
+                    continue;
+                }
+
+                for (let effect of this._allEffects[i]["animations"]) {
+                    if (effect["animName"] === effectName) {
+                        let icon = this.checkEffectIconExist(effect["pluginType"]);
+                        if (icon) {
+                            return icon;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        if (this._allEffects[id] === undefined ||
+            this._allEffects[id]["animations"] === undefined) {
+
+            return null;
+        }
+
+        for (let effect of this._allEffects[id]["animations"]) {
+            if (effect["animName"] === effectName) {
+                let icon = this.checkEffectIconExist(effect["pluginType"]);
+                if (icon) {
+                    return icon;
+                }
+            }
+        }
+
+        return null;
+    }
+
     _createNanoEffectsItems(effectsArray, id) {
         let res = [];
 
@@ -1389,6 +1441,14 @@ var NanoPanelMenu = GObject.registerClass({
             effectItem.x_expand = true;
             effectItem.label.x_align = Clutter.ActorAlign.CENTER;
             effectItem.label.set_x_expand(true);
+
+            if (this._iconPack !== NanoIconPack.NONE) {
+                let icon = this.trytoGetIconOfEffect(id, effect);
+    
+                if (icon !== null){
+                    effectItem.insert_child_at_index(icon, 1);
+                }
+            }
 
             let path = `${this._rndID()}::device::${id}::switch`;
 

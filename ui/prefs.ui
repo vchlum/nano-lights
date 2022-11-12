@@ -15,10 +15,10 @@
             <object class="GtkStack" id="prefsstack">
                 <child>
                     <object class="GtkStackPage">
-                        <property name="name">bridges</property>
+                        <property name="name">devices</property>
                         <property name="title" translatable="yes">Nanoleaf devices</property>
                         <property name="child">
-                            <object class="GtkBox" id="pageBridges">
+                            <object class="GtkBox" id="pageDevices">
                                 <property name="halign">fill</property>
                                 <property name="vexpand">True</property>
                                 <property name="hexpand">True</property>
