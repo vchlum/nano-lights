@@ -144,7 +144,27 @@ var NanoPanelMenu = GObject.registerClass({
         });
         this._appendSignal(signal, this.menu, false);
 
-        this.rebuildMenuStart();
+        /* if the desktop is starting up, wait until starting is finished */
+        this._startingUpSignal = undefined;
+        if (Main.layoutManager._startingUp) {
+            this._startingUpSignal = Main.layoutManager.connect(
+                "startup-complete",
+                () => {
+                    Main.layoutManager.disconnect(this._startingUpSignal);
+                    this._startingUpSignal = undefined;
+
+                    this.rebuildMenuStart();
+                    this._setScreenChangeDetection(
+                        this.rebuildMenuStart.bind(this)
+                    );
+                }
+            );
+        } else {
+            this.rebuildMenuStart();
+            this._setScreenChangeDetection(
+                this.rebuildMenuStart.bind(this)
+            );
+        }
     }
 
     /**
@@ -163,6 +183,26 @@ var NanoPanelMenu = GObject.registerClass({
             "rebuild": rebuild,
             "permanent": permanent
         }
+    }
+
+    /**
+     * Connects signals with change of displays
+     * to rebuild menu and detect new displays or change display scale.
+     * 
+     * @method _setScreenChangeDetection
+     * @private
+     */
+    _setScreenChangeDetection(screenChangeFunction = this.rebuildMenuStart) {
+
+        let signal;
+
+        signal = Main.layoutManager.connect(
+            "monitors-changed",
+            () => {
+                screenChangeFunction();
+            }
+        );
+        this._appendSignal(signal, Main.layoutManager, false);
     }
 
     /**
@@ -694,10 +734,8 @@ var NanoPanelMenu = GObject.registerClass({
      * @method _createLightSwitch
      * @private
      * @param {Object} switchItem to colorize
-     * @param {String} bridgeid
-     * @param {Number} lightid
-     * @param {Number} groupid
-     * @param {Boolean} tmp: true for tmp refresh
+     * @param {String} id
+     * @param {Boolean} tmp: true for permanent refresh object
      */
      _createSwitchColor(switchItem, data, id, permanent = true) {
 
@@ -717,10 +755,8 @@ var NanoPanelMenu = GObject.registerClass({
      * @method _createLightSwitch
      * @private
      * @param {Object} slider to colorize
-     * @param {String} bridgeid
-     * @param {Number} lightid
-     * @param {Number} groupid
-     * @param {Boolean} tmp: true for tmp refresh
+     * @param {String} id
+     * @param {Boolean} tmp: true for permanent refresh object
      */
     _createSliderColor(slider, data, id, permanent = true) {
 
@@ -930,9 +966,7 @@ var NanoPanelMenu = GObject.registerClass({
      * 
      * @method _createBrightnessSlider
      * @private
-     * @param {String} bridgeid
-     * @param {Number} lightid
-     * @param {Number} groupid
+     * @param {String} id
      * @return {Object} Brightness slider
      */
      _createDeviceSlider(data, id, permanent = true) {
@@ -1018,7 +1052,6 @@ var NanoPanelMenu = GObject.registerClass({
 
     _createNanoDevice(data, id = "all") {
         let item;
-        let icon = null;
         let name = _("All")
 
         if (id !== "all") {
@@ -1037,11 +1070,14 @@ var NanoPanelMenu = GObject.registerClass({
 
         item.insert_child_at_index(itemBox, 1);
 
-        icon = null;
-        if (icon !== null) {
-            item.insert_child_at_index(icon, 1);
-        }
+        if (this._iconPack !== NanoIconPack.NONE) {
+            let icon = this._getGnomeIcon("dialog-information");
 
+            if (icon !== null) {
+                item.insert_child_at_index(icon, 1);
+            }
+        }
+        
         item.set_x_align(Clutter.ActorAlign.FILL);
         item.label.set_x_expand(true);
 
@@ -1097,6 +1133,14 @@ var NanoPanelMenu = GObject.registerClass({
         itemBox.vertical = true;
         itemBox.add(label);
         deviceSubMenu.insert_child_at_index(itemBox, 1);
+
+        if (this._iconPack !== NanoIconPack.NONE) {
+            let icon = this._getGnomeIcon("dialog-information");
+
+            if (icon !== null) {
+                deviceSubMenu.insert_child_at_index(icon, 1);
+            }
+        }
 
         this._nanoMenu["devices"] = {}
         this._nanoMenu["devices"]["object"] = deviceSubMenu;
@@ -1159,6 +1203,14 @@ var NanoPanelMenu = GObject.registerClass({
         /* disable closing menu on item activated */
         controlSubMenu.menu.itemActivated = (animate) => {};
 
+        if (this._iconPack !== NanoIconPack.NONE) {
+            let icon = this._getGnomeIcon("applications-graphics");
+
+            if (icon !== null) {
+                controlSubMenu.insert_child_at_index(icon, 1);
+            }
+        }
+
         controlSubMenu.menu.connect(
             'open-state-changed',
             (menu, isOpen) => {
@@ -1187,6 +1239,14 @@ var NanoPanelMenu = GObject.registerClass({
 
         /* disable closing menu on item activated */
         effectsSubMenu.menu.itemActivated = (animate) => {};
+
+        if (this._iconPack !== NanoIconPack.NONE) {
+            let icon = this._getGnomeIcon("preferences-desktop-theme");
+
+            if (icon !== null) {
+                effectsSubMenu.insert_child_at_index(icon, 1);
+            }
+        }
 
         this._nanoMenu["effects"] = {}
         this._nanoMenu["effects"]["object"] = effectsSubMenu;
@@ -1382,8 +1442,6 @@ var NanoPanelMenu = GObject.registerClass({
         switch (type) {
             case "rhythm": 
                 return this._getGnomeIcon("audio-x-generic");
-            case "color":
-                return this._getGnomeIcon("applications-graphics");
             default:
                 break;
         }
@@ -1607,9 +1665,9 @@ var NanoPanelMenu = GObject.registerClass({
         this.checkInstances();
 
         /**
-         * In case of not getting any response from some bridge
+         * In case of not getting any response from some device
          * within the time
-         * this will build menu for bridges that responded so far
+         * this will build menu for devices that responded so far
          */
         let timeout = (this._connectionTimeout + 1) * 1000;
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
@@ -1841,7 +1899,7 @@ var NanoPanelMenu = GObject.registerClass({
         let g = 0;
         let b = 0;
 
-        Utils.logDebug("Refreshing bridge menu.");
+        Utils.logDebug("Refreshing nano menu.");
 
         for (let path in this.refreshMenuObjects) {
 

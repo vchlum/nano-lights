@@ -20,7 +20,7 @@
     </key>
     <key name="devices" type="a{sa{ss}}">
       <default>{}</default>
-      <summary>All bridges</summary>
+      <summary>All devices</summary>
     </key>
     <key name="indicator-position" enum="org.gnome.shell.extensions.nano-lights.indicator-position">
       <default>"right"</default>

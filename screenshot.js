@@ -47,7 +47,7 @@ const Clutter = imports.gi.Clutter;
  * @return {Object} instance
  */
 var MyScreenshot =  GObject.registerClass({
-    GTypeName: "MyScreenshot",
+    GTypeName: "HueScreenshot",
 }, class MyScreenshot extends GObject.Object {
 
     _init(props={}) {

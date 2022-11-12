@@ -2,7 +2,7 @@
 
 /**
  * prefs nano-lights
- * JavaScript Gnome extension for Nanoleafs.
+ * JavaScript Gnome extension for Nanoleaf devices.
  *
  * @author Václav Chlumský
  * @copyright Copyright 2022, Václav Chlumský.
@@ -51,10 +51,10 @@ var forceEnglish = false;
 
 
 /**
- * AddSyncboxDialog object. Provides dialog window
- * expecting syncbox IP address as input.
+ * AddDeviceIpDialog object. Provides dialog window
+ * expecting device IP address as input.
  * 
- * @class AddSyncboxDialog
+ * @class AddDeviceIpDialog
  * @constructor
  * @param {Object} parent
  * @return {Object} gtk dialog
@@ -96,10 +96,11 @@ const AddDeviceIpDialog = GObject.registerClass({
 /**
  * DeviceTab object. One tab per device.
  * 
- * @class SyncboxTab
+ * @class DeviceTab
  * @constructor
- * @param {Object} id of the syncbox
- * @param {Object} essential syncbox data stored by settings.
+ * @param {Object} IP of the device
+ * @param {Object} id of the device
+ * @param {Object} device data
  * @return {Object} gtk ScrolledWindow
  */
  const DeviceTab = GObject.registerClass({
@@ -175,12 +176,9 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Updates the overall syncbox state.
+     * Updates the overall device state.
      * 
      * @method updateDevice
-     * @param {Object} syncbox instance
-     * @param {Object} syncbox settings data
-     * @param {Object} syncbox data retrieved from syncbox
      */
     updateTab() {
         if (this.instance.isAuthenticated()) {
@@ -216,8 +214,8 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Button handler either connect unavailable syncbox
-     * or (if connected) the button can be used for deleting the syncbox.
+     * Button handler either connect unavailable device
+     * or (if connected) the button can be used for deleting the device.
      * 
      * @method _onConnectOrRemoveDeviceClicked
      * @private
@@ -245,7 +243,7 @@ const AddDeviceIpDialog = GObject.registerClass({
     };
 
     /**
-     * Button handler emites the need of removing the syncbox.
+     * Button handler emites the need of removing the device.
      * Removed from settings too.
      * 
      * @method _onRemoveDeviceClicked
@@ -261,67 +259,11 @@ const AddDeviceIpDialog = GObject.registerClass({
     };
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * PrefsWidget object. Main preferences widget.
  * 
  * @class PrefsWidget
  * @constructor
- * @param {Object} object of bridges
- * @param {Object} object of syncboxes
  * @return {Object} gtk Box
  */
  const PrefsWidget = GObject.registerClass({
@@ -340,8 +282,6 @@ const AddDeviceIpDialog = GObject.registerClass({
 
     _init() {
         super._init();
-
-        this._registerSyncboxDialog = null;
 
         this._devicesTabs = {};
         this._devicesTabsLabels = {};
@@ -394,7 +334,7 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Wite setting for bridges
+     * Write setting of devices
      *
      * @method writeDevicesSettings
      */
@@ -409,7 +349,7 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Button handler initates discovering bridges in the network.
+     * Button handler initates discovering devices in the network.
      * 
      * @method _onDiscoverDevicesClicked
      * @private
@@ -420,7 +360,7 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Button handler for adding a new bridge manually.
+     * Button handler for adding a new device manually.
      * Opens dialog with ip adress input.
      * 
      * @method _onAddDeviceClicked
@@ -503,7 +443,7 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Creates a new tab for bridge without a tab and makes the tab ready for use.
+     * Creates a new tab for devices without a tab and makes the tab ready for use.
      * 
      * @method _updateDeviceTabs
      * @private
@@ -627,10 +567,10 @@ const AddDeviceIpDialog = GObject.registerClass({
     }
 
     /**
-     * Combobox handler of changing bridge timeout.
+     * Combobox handler of changing device timeout.
      * The value is stored in settings.
      * 
-     * @method _connectionTimeoutBridgeChanged
+     * @method _connectionTimeoutChanged
      * @private
      * @param {Object} combobox
      */

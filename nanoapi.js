@@ -173,7 +173,7 @@ var Nano =  GObject.registerClass({
     }
 
     /**
-     * Parse and emit result of bridge response.
+     * Parse and emit result of device response.
      *
      * @method _responseJsonParse
      * @private
