@@ -52,15 +52,17 @@ var NANOLIGHTS_SETTINGS_MENU_SELECTED = "menu-selected";
 var NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{ss}}";
 
 const [major] = Config.PACKAGE_VERSION.split(".");
-var shellVersion = Number.parseInt(major);
-
-const Gettext = imports.gettext.domain('nano-lights');
-var forceEnglish = ExtensionUtils.getSettings(
-    NANOLIGHTS_SETTINGS_SCHEMA
-).get_boolean(NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
-const _ = forceEnglish ? (a) => { return a; } : Gettext.gettext;
+const shellVersion = Number.parseInt(major);
 
 var debug = false;
+
+function checkGettextEnglish(gettext) {
+    let forceEnglish = ExtensionUtils.getSettings(
+        NANOLIGHTS_SETTINGS_SCHEMA
+    ).get_boolean(NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
+
+    return forceEnglish ? (a) => { return a; } : gettext;
+}
 
 /**
  * Logs debug message
@@ -73,6 +75,12 @@ function logDebug(msg) {
         log(`Nano Lights [debug]: ${msg}`)
     }
 }
+
+function removeFromArray(arr, remove) {
+    return arr.filter(
+        (value) => { return value != remove; }
+    );
+ }
 
 /**
  * Logs error message

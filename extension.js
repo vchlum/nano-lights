@@ -70,6 +70,8 @@ function enable() {
  */
 function disable() {
 
+    nanoLightsMenu.disarmTimers();
     nanoLightsMenu.disconnectSignals(true);
     nanoLightsMenu.destroy();
+    nanoLightsMenu = null;
 }

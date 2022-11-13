@@ -44,11 +44,7 @@ const Avahi = Me.imports.avahi;
 const NanoApi = Me.imports.nanoapi;
 
 const Gettext = imports.gettext.domain('nano-lights');
-var _ = Gettext.gettext;
-var forceEnglish = false;
-
-
-
+const _ = Gettext.gettext;
 
 /**
  * AddDeviceIpDialog object. Provides dialog window

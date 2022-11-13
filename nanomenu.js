@@ -49,10 +49,7 @@ const ColorPicker = Me.imports.colorpicker;
 const Slider = imports.ui.slider;
 
 const Gettext = imports.gettext.domain('nano-lights');
-var forceEnglish = ExtensionUtils.getSettings(
-    Utils.NANOLIGHTS_SETTINGS_SCHEMA
-).get_boolean(Utils.NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
-const _ = forceEnglish ? (a) => { return a; } : Gettext.gettext;
+const __ = Gettext.gettext;
 
 const NanoMenuPosition = {
     CENTER: 0,
@@ -95,6 +92,9 @@ var NanoPanelMenu = GObject.registerClass({
     _init() {
         super._init(0.0, Me.metadata.name, false);
 
+        this._ = Utils.checkGettextEnglish(__);
+
+        this._timers = []
         this._signals = {};
         this._rebuildingMenu = false;
         this._instances = {};
@@ -371,13 +371,20 @@ var NanoPanelMenu = GObject.registerClass({
         signal = this._instances[id].connect(
             "change-occurred",
             () => {
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._brightnessDuration * 1000 + 100, () => {
-                    /**
-                     * we need to delay this check because
-                     * the transition takes 'duration' seconds
-                     **/
-                    this._checkInstance(id);
-                });                
+                let timerId = GLib.timeout_add(
+                    GLib.PRIORITY_DEFAULT,
+                    this._brightnessDuration * 1000 + 100,
+                    () => {
+                        /**
+                         * we need to delay this check because
+                         * the transition takes 'duration' seconds
+                         **/
+                        this._checkInstance(id);
+
+                        this._timers = Utils.removeFromArray(this._timers, timerId);
+                    }
+                );
+                this._timers.push(timerId);
             }
         );
         this._appendSignal(signal, this._instances[id], true);
@@ -582,7 +589,7 @@ var NanoPanelMenu = GObject.registerClass({
          * Refresh menu item
          */
          let refreshMenuItem = new PopupMenu.PopupMenuItem(
-            _("Refresh menu")
+            this._("Refresh menu")
         );
 
         if (this._iconPack !== NanoIconPack.NONE) {
@@ -608,7 +615,7 @@ var NanoPanelMenu = GObject.registerClass({
          * Settings menu item
          */
         let prefsMenuItem = new PopupMenu.PopupMenuItem(
-            _("Settings")
+            this._("Settings")
         );
 
         if (this._iconPack !== NanoIconPack.NONE) {
@@ -654,7 +661,7 @@ var NanoPanelMenu = GObject.registerClass({
 
     _createNanoServiceMenu() {
         let nanoSubMenu = new PopupMenu.PopupSubMenuMenuItem(
-            _("Nano Lights")
+            this._("Nano Lights")
         );
 
         /* disable closing menu on item activated */
@@ -1052,7 +1059,7 @@ var NanoPanelMenu = GObject.registerClass({
 
     _createNanoDevice(data, id = "all") {
         let item;
-        let name = _("All")
+        let name = this._("All")
 
         if (id !== "all") {
             name = this._instances[id].name;
@@ -1121,7 +1128,7 @@ var NanoPanelMenu = GObject.registerClass({
         let items = [];
 
         let deviceSubMenu = new PopupMenu.PopupSubMenuMenuItem(
-            _("No device selected")
+            this._("No device selected")
         );
 
         /* disable closing menu on item activated */
@@ -1197,7 +1204,7 @@ var NanoPanelMenu = GObject.registerClass({
 
     _createNanoMenuControl(data) {
         let controlSubMenu = new PopupMenu.PopupSubMenuMenuItem(
-            _("Select a device")
+            this._("Select a device")
         );
         
         /* disable closing menu on item activated */
@@ -1234,7 +1241,7 @@ var NanoPanelMenu = GObject.registerClass({
 
     _createNanoMenuEffects(data) {
         let effectsSubMenu = new PopupMenu.PopupSubMenuMenuItem(
-            _("Select a device")
+            this._("Select a device")
         );
 
         /* disable closing menu on item activated */
@@ -1335,12 +1342,19 @@ var NanoPanelMenu = GObject.registerClass({
              * the first menu closes and without the timer I would open
              * different menu instad
              */
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-                if (this._lastOpenedMenu["opening"] !== null) {
-                    this._lastOpenedMenu["opening"].open(true);
-                    this._lastOpenedMenu["opening"] = null;
+            let timerId = GLib.timeout_add(
+                GLib.PRIORITY_DEFAULT,
+                100,
+                () => {
+                    if (this._lastOpenedMenu["opening"] !== null) {
+                        this._lastOpenedMenu["opening"].open(true);
+                        this._lastOpenedMenu["opening"] = null;
+                    }
+
+                    this._timers = Utils.removeFromArray(this._timers, timerId);
                 }
-            });
+            );
+            this._timers.push(timerId);
         }
 
         if (!isOpen) {
@@ -1396,7 +1410,7 @@ var NanoPanelMenu = GObject.registerClass({
          * set current selection
          */
 
-        let name = _("All")
+        let name = this._("All")
 
         if (id !== "all") {
             name = this._instances[id].name;
@@ -1598,7 +1612,7 @@ var NanoPanelMenu = GObject.registerClass({
 
         this._nanoMenu["control"]["object"].visible = false;
         this._nanoMenu["control"]["object"].menu.removeAll();
-        this._nanoMenu["control"]["object"].label.text = _("Color & Temperature")
+        this._nanoMenu["control"]["object"].label.text = this._("Color & Temperature")
 
         let controlItems = this._createNanoControl(data, id);
         for (let item in controlItems) {
@@ -1616,7 +1630,7 @@ var NanoPanelMenu = GObject.registerClass({
 
         this._nanoMenu["effects"]["object"].visible = false;
         this._nanoMenu["effects"]["object"].menu.removeAll();
-        this._nanoMenu["effects"]["object"].label.text = _("Scenes");
+        this._nanoMenu["effects"]["object"].label.text = this._("Scenes");
 
         let effectsItems = this._createNanoEffects(data, id);
         for (let item in effectsItems) {
@@ -1670,16 +1684,23 @@ var NanoPanelMenu = GObject.registerClass({
          * this will build menu for devices that responded so far
          */
         let timeout = (this._connectionTimeout + 1) * 1000;
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
-            if (this._rebuildingMenu) {
-                Utils.logDebug("Not all devices responded. Rebuilding menu anyway.");
+        let timerId = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT,
+            timeout,
+            () => {
+                if (this._rebuildingMenu) {
+                    Utils.logDebug("Not all devices responded. Rebuilding menu anyway.");
 
-                this._rebuildingMenu = false;
-                this._rebuildingMenuRes = {};
+                    this._rebuildingMenu = false;
+                    this._rebuildingMenuRes = {};
 
-                this._rebuildMenu();
+                    this._rebuildMenu();
+
+                    this._timers = Utils.removeFromArray(this._timers, timerId);
+                }
             }
-        });
+        );
+        this._timers.push(timerId);
     }
 
     /**
@@ -1978,6 +1999,16 @@ var NanoPanelMenu = GObject.registerClass({
         }
     }
 
+    disarmTimers() {
+        for (let t of this._timers) {
+            if (t) {
+                GLib.Source.remove(t);
+            }
+        }
+
+        this._timers = [];
+    }
+
     /**
      * Disconect signals
      * 
@@ -1985,7 +2016,7 @@ var NanoPanelMenu = GObject.registerClass({
      * @param {Boolean} disconnect all
      * @param {Boolean} disconnect only tmp signals and return
      */
-     disconnectSignals(all, onlyTmp = false) {
+    disconnectSignals(all, onlyTmp = false) {
         let toDisconnect = "rebuild";
 
         if (onlyTmp) {
