@@ -1110,12 +1110,6 @@ var NanoPanelMenu = GObject.registerClass({
 
             this._selectNanoMenu(data, id);
 
-            if (this._nanoMenu["effects"]["object"].visible) {
-                this._nanoMenu["effects"]["object"].menu.open(true);
-            } else if (this._nanoMenu["control"]["object"].visible) {
-                this._nanoMenu["control"]["object"].menu.open(true);
-            }
-
             return item.originalActivate(event);
         }
 
@@ -1155,7 +1149,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["devices"]["box"] = itemBox; 
         this._nanoMenu["devices"]["switch"] = null;
         this._nanoMenu["devices"]["slider"] = null;
-        this._nanoMenu["devices"]["undo"] = null;
+        this._nanoMenu["devices"]["unselect-button"] = null;
         this._nanoMenu["devices"]["selected"] = null;
         this._nanoMenu["devices"]["menu-items"] = {};
 
@@ -1231,7 +1225,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["control"]["box"] = null; 
         this._nanoMenu["control"]["switch"] = null;
         this._nanoMenu["control"]["slider"] = null;
-        this._nanoMenu["control"]["undo"] = null;
+        this._nanoMenu["control"]["unselect-button"] = null;
         this._nanoMenu["control"]["selected"] = null;
 
         controlSubMenu.visible = false;
@@ -1261,7 +1255,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["effects"]["box"] = null; 
         this._nanoMenu["effects"]["switch"] = null;
         this._nanoMenu["effects"]["slider"] = null;
-        this._nanoMenu["effects"]["undo"] = null;
+        this._nanoMenu["effects"]["unselect-button"] = null;
         this._nanoMenu["effects"]["selected"] = null;
 
         effectsSubMenu.menu.connect(
@@ -1362,6 +1356,51 @@ var NanoPanelMenu = GObject.registerClass({
         }
     }
 
+    _updateUnselectDeviceButton(data, id) {
+        if (this._nanoMenu["devices"]["unselect-button"] !== null){
+            this._nanoMenu["devices"]["object"].remove_child(
+                this._nanoMenu["devices"]["unselect-button"]
+            );
+
+            this._nanoMenu["devices"]["unselect-button"] = null;
+        }
+
+        let unselectButton = new St.Button(
+            {reactive: true, can_focus: true}
+        );
+
+        if (id == "all") {
+            this._nanoMenu["devices"]["unselect-button"] = unselectButton;
+            return unselectButton;
+        }
+
+        let buttonContent = null;
+        if (this._iconPack !== NanoIconPack.NONE) {
+            buttonContent = this._getGnomeIcon("edit-undo");
+        }
+
+        if (buttonContent === null) {
+            buttonContent = new St.Label();
+            buttonContent.text = "<<<";
+        }
+
+        buttonContent.set_y_align(Clutter.ActorAlign.CENTER);
+        buttonContent.set_y_expand(true);
+
+        unselectButton.child = buttonContent;
+
+        unselectButton.connect(
+            "button-press-event",
+            () => {
+                this._selectNanoMenu(data, "all");
+            }
+        );
+
+        this._nanoMenu["devices"]["unselect-button"] = unselectButton;
+
+        return unselectButton;
+    }
+
     _selectNanoDevice(data, id) {
         /**
          * remove old refreshing links
@@ -1407,9 +1446,16 @@ var NanoPanelMenu = GObject.registerClass({
         }
 
         /**
+         * create unselect button
+         */
+        this._nanoMenu["devices"]["object"].insert_child_at_index(
+            this._updateUnselectDeviceButton(data, id),
+            this._nanoMenu["devices"]["object"].get_children().length - 1
+        );
+
+        /**
          * set current selection
          */
-
         let name = this._("All")
 
         if (id !== "all") {
@@ -1427,6 +1473,7 @@ var NanoPanelMenu = GObject.registerClass({
             this._nanoMenu["devices"]["object"].get_children().length - 1
         );
         this._nanoMenu["devices"]["switch"] = itemSwitch;
+
 
         this.refreshMenu();
     }
@@ -1450,6 +1497,23 @@ var NanoPanelMenu = GObject.registerClass({
 
         item.visible = false;
         this._nanoMenu["devices"]["hidden-item"] = item;
+
+        if (id === "all") {
+
+            this._openMenuDefault = this._nanoMenu["devices"]["object"].menu;
+            this._nanoMenu["devices"]["object"].menu.open(true);
+
+        } else if (this._nanoMenu["effects"]["object"].visible) {
+
+            this._openMenuDefault = this._nanoMenu["effects"]["object"].menu;
+            this._nanoMenu["effects"]["object"].menu.open(true);
+
+        } else if (this._nanoMenu["control"]["object"].visible) {
+
+            this._openMenuDefault = this._nanoMenu["control"]["object"].menu;
+            this._nanoMenu["control"]["object"].menu.open(true);
+
+        }
     }
 
     checkEffectIconExist(type) {
