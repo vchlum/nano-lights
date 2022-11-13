@@ -7,6 +7,9 @@ nano-lights is a Gnome Shell extension for controlling Nanoleaf lights on local 
 ## Supported Gnome Shell version
 This extension supports Gnome Shell verison 43 and above.
 
+## Installation from e.g.o
+https://extensions.gnome.org/extension/5519/nano-lights/
+
 ## Manual installation
 
  1. `git clone https://github.com/vchlum/nano-lights.git`
