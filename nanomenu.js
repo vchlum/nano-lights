@@ -1273,7 +1273,7 @@ var NanoPanelMenu = GObject.registerClass({
     _createNanoMenu() {
         let items = [];
 
-        if (this._infoData.length === 0) {
+        if (Object.keys(this._infoData).length === 0) {
             return items;
         }
 
