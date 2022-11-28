@@ -968,6 +968,16 @@ var NanoPanelMenu = GObject.registerClass({
         return false;
     }
 
+    _getAnyDeviceOn(data) {
+        for (let subId in data) {
+            if (this._getDeviceOn(data, subId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Creates slider for controlling the brightness
      * 
@@ -1838,7 +1848,13 @@ var NanoPanelMenu = GObject.registerClass({
         let parsedPath = [];
 
         if (id === "all") {
+            let onlyOn = this._getAnyDeviceOn(this._infoData)
+
             for (let subId in this._instances) {
+                if (onlyOn && !this._getDeviceOn(this._infoData, subId)) {
+                    continue
+                }
+
                 data["id"] = subId;
                 this._menuEventHandler(data);
                 data["id"] = "all"; /* will be preserved for next call, we need to return 'all' */
