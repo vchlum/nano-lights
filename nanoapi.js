@@ -366,9 +366,16 @@ var Nano =  GObject.registerClass({
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }
 
-    setDeviceColor(hue, sat, bri) {
+    setDeviceColor(hue, sat) {
         let url = `${this._baseUrl}/${this._authToken}/state`;
-        let data = {"hue": { "value": hue }, "sat": { "value": sat }, "brightness" : { "value": bri} };
+        let data = {"hue": { "value": hue }, "sat": { "value": sat }};
+
+        this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
+    }
+
+    setDeviceHsv(hue, sat, bri) {
+        let url = `${this._baseUrl}/${this._authToken}/state`;
+        let data = {"hue": { "value": hue }, "sat": { "value": sat }, "brightness" : { "value": bri, "duration": 0} };
 
         this._devicePUT(url, NanoRequestype.CHANGE_OCCURRED, data)
     }

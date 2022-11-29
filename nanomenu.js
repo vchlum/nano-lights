@@ -94,7 +94,7 @@ var NanoPanelMenu = GObject.registerClass({
 
         this._ = Utils.checkGettextEnglish(__);
 
-        this._timers = []
+        this._timers = [];
         this._signals = {};
         this._rebuildingMenu = false;
         this._instances = {};
@@ -790,12 +790,13 @@ var NanoPanelMenu = GObject.registerClass({
                 let [r, g, b ] = [0, 0, 0];
 
                 for (let color in effect["palette"]) {
-                    let [subR, subG, subB] = Utils.hslToRgb(
-                        effect["palette"][color]["hue"] / 360.0,
-                        effect["palette"][color]["saturation"] / 100.0,
-                        //effect["palette"][color]["brightness"] / 100.0,
-                        0.5
-                    );
+
+                    let [subR, subG, subB] = Utils.hsvToRgb(
+                        effect["palette"][color]["hue"],
+                        effect["palette"][color]["saturation"],
+                        100
+                        //effect["palette"][color]["brightness"]
+                    )
 
                     if (subR > 0 || subG > 0 || subB > 0) {
                         r = r + subR;
@@ -868,10 +869,12 @@ var NanoPanelMenu = GObject.registerClass({
 
         switch (data[id]["state"]["colorMode"]) {
             case "hs":
-                let h = data[id]["state"]["hue"]["value"] / (1.0 * data[id]["state"]["hue"]["max"]);
-                let s = data[id]["state"]["sat"]["value"] / 100.0;
-                //let l = data[id]["state"]["brightness"]["value"] / 100.0;
-                color =  Utils.hslToRgb(h, s, 0.5);
+                color = Utils.hsvToRgb(
+                    data[id]["state"]["hue"]["value"],
+                    data[id]["state"]["sat"]["value"],
+                    100
+                    //data[id]["state"]["brightness"]["value"]
+                )
                 break;
 
             case "ct":
@@ -1905,13 +1908,9 @@ var NanoPanelMenu = GObject.registerClass({
                     break;
                 }
 
-                let [h, s, l] = Utils.rgbToHsl(object.r, object.g, object.b);
+                let [h, s, l] = Utils.rgbToHsv(object.r, object.g, object.b);
 
-                this._instances[id].setDeviceColor(
-                    Math.round(h * 360),
-                    Math.round(s * 100),
-                    Math.round(l * 100)
-                );
+                this._instances[id].setDeviceColor(h, s);
 
                 break;
 
