@@ -79,6 +79,13 @@ var NanoEvents = {
     EFFECT: 4,
 }
 
+/**
+ * NanoPanelMenu class. Provides widget with menu items.
+ * 
+ * @class NanoPanelMenu
+ * @constructor
+ * @return {Object} menu widget instance
+ */
 var NanoPanelMenu = GObject.registerClass({
     GTypeName: 'NanoPanelMenu',
 }, class NanoPanelMenu extends PanelMenu.Button {
@@ -154,16 +161,10 @@ var NanoPanelMenu = GObject.registerClass({
                     this._startingUpSignal = undefined;
 
                     this.rebuildMenuStart();
-                    this._setScreenChangeDetection(
-                        this.rebuildMenuStart.bind(this)
-                    );
                 }
             );
         } else {
             this.rebuildMenuStart();
-            this._setScreenChangeDetection(
-                this.rebuildMenuStart.bind(this)
-            );
         }
     }
 
@@ -183,26 +184,6 @@ var NanoPanelMenu = GObject.registerClass({
             "rebuild": rebuild,
             "permanent": permanent
         }
-    }
-
-    /**
-     * Connects signals with change of displays
-     * to rebuild menu and detect new displays or change display scale.
-     * 
-     * @method _setScreenChangeDetection
-     * @private
-     */
-    _setScreenChangeDetection(screenChangeFunction = this.rebuildMenuStart) {
-
-        let signal;
-
-        signal = Main.layoutManager.connect(
-            "monitors-changed",
-            () => {
-                screenChangeFunction();
-            }
-        );
-        this._appendSignal(signal, Main.layoutManager, false);
     }
 
     /**
@@ -1488,7 +1469,6 @@ var NanoPanelMenu = GObject.registerClass({
         this.refreshMenu();
     }
 
-
     _selectNanoMenu(data, id) {
         if (this._nanoMenu["devices"]["menu-items"][id] === undefined) {
             Utils.logDebug("Can not select menu. Unknown menu id.");
@@ -2092,6 +2072,11 @@ var NanoPanelMenu = GObject.registerClass({
         }
     }
 
+    /**
+     * Remove timers created by GLib.timeout_add
+     * 
+     * @method disarmTimers
+     */
     disarmTimers() {
         for (let t of this._timers) {
             if (t) {
