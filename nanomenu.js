@@ -1225,13 +1225,6 @@ var NanoPanelMenu = GObject.registerClass({
             }
         }
 
-        controlSubMenu.menu.connect(
-            'open-state-changed',
-            (menu, isOpen) => {
-                this._handleLastOpenedMenu(menu, isOpen);
-            }
-        );
-
         this._nanoMenu["control"] = {}
         this._nanoMenu["control"]["object"] = controlSubMenu;
         this._nanoMenu["control"]["icon"] = null;
@@ -1240,6 +1233,20 @@ var NanoPanelMenu = GObject.registerClass({
         this._nanoMenu["control"]["slider"] = null;
         this._nanoMenu["control"]["unselect-button"] = null;
         this._nanoMenu["control"]["selected"] = null;
+
+        controlSubMenu.menu.connect(
+            'open-state-changed',
+            (menu, isOpen) => {
+                if (!isOpen &&
+                    this._menuSelected["nano"] !== undefined &&
+                    this._menuSelected["nano"]["device"] !== "all") {
+
+                    this._openMenuDefault = controlSubMenu.menu;
+                }
+
+                this._handleLastOpenedMenu(menu, isOpen);
+            }
+        );
 
         controlSubMenu.visible = false;
 
@@ -1274,6 +1281,12 @@ var NanoPanelMenu = GObject.registerClass({
         effectsSubMenu.menu.connect(
             'open-state-changed',
             (menu, isOpen) => {
+                if (!isOpen &&
+                    this._menuSelected["nano"] !== undefined &&
+                    this._menuSelected["nano"]["device"] !== "all") {
+
+                    this._openMenuDefault = effectsSubMenu.menu;
+                }
                 this._handleLastOpenedMenu(menu, isOpen);
             }
         );
@@ -1416,22 +1429,6 @@ var NanoPanelMenu = GObject.registerClass({
 
     _selectNanoDevice(data, id) {
         /**
-         * remove old refreshing links
-         */
-        for (let path in this.refreshMenuObjects) {
-            if (!this.refreshMenuObjects[path]["permanent"]) {
-                delete this.refreshMenuObjects[path];
-            }
-        }
-
-        if(Object.keys(data).length === 0) {
-            Utils.logDebug(`Can not select device. No data available.`);
-        }
-
-        this._menuSelected["nano"] = {"device": id};
-        this.writeMenuSelectedSettings();
-
-        /**
          * remove old selection
          */
         if (this._nanoMenu["devices"]["icon"] !== null) {
@@ -1497,6 +1494,23 @@ var NanoPanelMenu = GObject.registerClass({
             Utils.logDebug("Can not select menu. Unknown menu id.");
             return;
         }
+
+        if(Object.keys(data).length === 0) {
+            Utils.logDebug(`Can not select device. No data available.`);
+            return;
+        }
+
+        /**
+         * remove old refreshing links
+         */
+        for (let path in this.refreshMenuObjects) {
+            if (!this.refreshMenuObjects[path]["permanent"]) {
+                delete this.refreshMenuObjects[path];
+            }
+        }
+
+        this._menuSelected["nano"] = {"device": id};
+        this.writeMenuSelectedSettings();
 
         let item = this._nanoMenu["devices"]["menu-items"][id];
 
