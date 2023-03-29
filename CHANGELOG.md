@@ -1,3 +1,5 @@
+## Version 4
+ * add Gnome 44 support
 ## Version 3
  * change HSL to HSV
  * keep selected submenu for selected device
