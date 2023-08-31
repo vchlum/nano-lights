@@ -5,14 +5,14 @@
  * JavaScript screenshot capturer.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,10 +33,9 @@
  * THE SOFTWARE.
  */
 
-const Screenshot = imports.ui.screenshot;
-const Shell = imports.gi.Shell;
-const GObject = imports.gi.GObject;
-const Clutter = imports.gi.Clutter;
+ import Shell from 'gi://Shell';
+ import GObject from 'gi://GObject';
+ import Clutter from 'gi://Clutter';
 
 /**
  * NanoScreenshot class for taking screenshots
@@ -46,7 +45,7 @@ const Clutter = imports.gi.Clutter;
  * @private
  * @return {Object} instance
  */
-var MyScreenshot =  GObject.registerClass({
+export var MyScreenshot =  GObject.registerClass({
     GTypeName: "HueScreenshot",
 }, class MyScreenshot extends GObject.Object {
 

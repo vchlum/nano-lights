@@ -5,14 +5,14 @@
  * JavaScript Gnome extension for Nanoleaf.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
 /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,35 +33,31 @@
  * THE SOFTWARE.
  */
 
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Config = imports.misc.config;
-const NM = imports.gi.NM;
+export var NANOLIGHTS_SETTINGS_SCHEMA = "org.gnome.shell.extensions.nano-lights";
+export var NANOLIGHTS_SETTINGS_FORCE_ENGLISH = "force-english";
+export var NANOLIGHTS_SETTINGS_DEVICES = "devices";
+export var NANOLIGHTS_SETTINGS_DEVICES_TYPE = "a{sa{ss}}";
+export var NANOLIGHTS_SETTINGS_INDICATOR = "indicator-position";
+export var NANOLIGHTS_SETTINGS_CONNECTION_TIMEOUT = "connection-timeout";
+export var NANOLIGHTS_SETTINGS_DEBUG = "debug";
+export var NANOLIGHTS_SETTINGS_ICONPACK = "icon-pack";
+export var NANOLIGHTS_SETTINGS_MENU_SELECTED = "menu-selected";
+export var NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{ss}}";
 
-var NANOLIGHTS_SETTINGS_SCHEMA = "org.gnome.shell.extensions.nano-lights";
-var NANOLIGHTS_SETTINGS_FORCE_ENGLISH = "force-english";
-var NANOLIGHTS_SETTINGS_DEVICES = "devices";
-var NANOLIGHTS_SETTINGS_DEVICES_TYPE = "a{sa{ss}}";
-var NANOLIGHTS_SETTINGS_INDICATOR = "indicator-position";
-var NANOLIGHTS_SETTINGS_CONNECTION_TIMEOUT = "connection-timeout";
-var NANOLIGHTS_SETTINGS_DEBUG = "debug";
-var NANOLIGHTS_SETTINGS_ICONPACK = "icon-pack";
-var NANOLIGHTS_SETTINGS_MENU_SELECTED = "menu-selected";
-var NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{ss}}";
+var _debug = false;
 
-const [major] = Config.PACKAGE_VERSION.split(".");
-const shellVersion = Number.parseInt(major);
-
-var debug = false;
-
-function checkGettextEnglish(gettext) {
-    let forceEnglish = ExtensionUtils.getSettings(
-        NANOLIGHTS_SETTINGS_SCHEMA
-    ).get_boolean(NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
+export function checkGettextEnglish(gettext, settings) {
+    let forceEnglish = settings.get_boolean(NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
 
     return forceEnglish ? (a) => { return a; } : gettext;
+}
+
+export function setDebug(debug) {
+    _debug = debug;
+}
+
+export function getDebug() {
+    return _debug;
 }
 
 /**
@@ -70,13 +66,13 @@ function checkGettextEnglish(gettext) {
  * @method logDebug
  * @param {String} meassage to print
  */
-function logDebug(msg) {
-    if (debug) {
+export function logDebug(msg) {
+    if (_debug) {
         log(`Nano Lights [debug]: ${msg}`)
     }
 }
 
-function removeFromArray(arr, remove) {
+export function removeFromArray(arr, remove) {
     return arr.filter(
         (value) => { return value != remove; }
     );
@@ -100,7 +96,7 @@ function removeFromArray(arr, remove) {
  * @param {Number} kelvin in temperature
  * @return {Object} array with [R, G, B]
  */
-function kelvinToRGB(kelvin) {
+export function kelvinToRGB(kelvin) {
     let tmpCalc = 0;
     let tmpKelvin = kelvin;
     let red = 0;
@@ -169,7 +165,7 @@ function kelvinToRGB(kelvin) {
  * @param {Number} blue
  * @return {Object} kelvin in temperature
  */
-function RGBToKelvin(r, g, b) {
+export function RGBToKelvin(r, g, b) {
     let selectR = -1;
     let selectG = -1;
     let selectB = -1;
@@ -286,7 +282,7 @@ function RGBToKelvin(r, g, b) {
  * @param {String} s string to convert
  * @return {Object} array of bytes
  */
-function string2Hex(s) {
+export function string2Hex(s) {
     let ret = [];
 
     for (let i = 0; i < s.length; i++) {
@@ -303,7 +299,7 @@ function string2Hex(s) {
  * @param {String} string to hash
  * @return {Integer} number
  */
-function hashMe(string) {
+export function hashMe(string) {
     let hash = 0;
 
     if (string.length == 0) {
@@ -325,7 +321,7 @@ function hashMe(string) {
  * 0 <= h <= 360
  * 0 <= s, l <= 100
  */
-function rgbToHsv (r, g, b) {
+export function rgbToHsv (r, g, b) {
     let rabs, gabs, babs, rr, gg, bb, h, s, v, diff, diffc, percentRoundFn;
     rabs = r / 255;
     gabs = g / 255;
@@ -368,7 +364,7 @@ function rgbToHsv (r, g, b) {
  * 0 <= s, l <= 100
  * 0 <= r, g, b <= 255
  */
-function hsvToRgb(h, s, v) {
+export function hsvToRgb(h, s, v) {
     h = h / 360.0
     s = s / 100.0
     v = v / 100.0

@@ -5,14 +5,14 @@
  * JavaScript Gnome extension for Nanoleaf devices.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,18 +33,14 @@
  * THE SOFTWARE.
  */
 
-const GLib = imports.gi.GLib;
-const Gtk = imports.gi.Gtk;
-const Gdk = imports.gi.Gdk;
-const GObject = imports.gi.GObject;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Utils = Me.imports.utils;
-const Avahi = Me.imports.avahi;
-const NanoApi = Me.imports.nanoapi;
-
-const Gettext = imports.gettext.domain('nano-lights');
-const _ = Gettext.gettext;
+import Adw from 'gi://Adw';
+import GLib from 'gi://GLib';
+import Gtk from 'gi://Gtk';
+import GObject from 'gi://GObject';
+import * as Utils from './utils.js';
+import * as Avahi from './avahi.js';
+import * as NanoApi from './nanoapi.js';
+import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 /**
  * AddDeviceIpDialog object. Provides dialog window
@@ -57,7 +53,7 @@ const _ = Gettext.gettext;
  */
 const AddDeviceIpDialog = GObject.registerClass({
     GTypeName: 'AddNanoDeviceIpDialog',
-    Template: Me.dir.get_child('ui/prefsadddeviceip.ui').get_uri(),
+    Template: 'resource:///org/gnome/Shell/Extensions/nano-lights/ui/prefsadddeviceip.ui',
     Signals: {
         "ip-address-ok": {},
     },
@@ -101,7 +97,7 @@ const AddDeviceIpDialog = GObject.registerClass({
  */
  const DeviceTab = GObject.registerClass({
     GTypeName: 'NanoDeviceTab',
-    Template: Me.dir.get_child('ui/prefsdevicetab.ui').get_uri(),
+    Template: 'resource:///org/gnome/Shell/Extensions/nano-lights/ui/prefsdevicetab.ui',
     InternalChildren: [
         'ipAddress',
         'statusLabel',
@@ -256,15 +252,15 @@ const AddDeviceIpDialog = GObject.registerClass({
 });
 
 /**
- * PrefsWidget object. Main preferences widget.
+ * PreferencesPage object. Main preferences widget.
  * 
- * @class PrefsWidget
+ * @class PreferencesPage
  * @constructor
  * @return {Object} gtk Box
  */
- const PrefsWidget = GObject.registerClass({
+ export const PreferencesPage = GObject.registerClass({
     GTypeName: 'NanoPrefsWidget',
-    Template: Me.dir.get_child('ui/prefs.ui').get_uri(),
+    Template: 'resource:///org/gnome/Shell/Extensions/nano-lights/ui/prefs.ui',
     InternalChildren: [
         'devicesNotebook',
         'positionInPanelComboBox',
@@ -274,17 +270,21 @@ const AddDeviceIpDialog = GObject.registerClass({
         'debugSwitch',
         'aboutVersion',
     ],
-}, class PrefsWidget extends Gtk.Box {
+}, class PreferencesPage extends Adw.PreferencesPage {
 
-    _init() {
+    _init(metadata, mainDir, settings, path) {
         super._init();
+
+        this._metadata = metadata;
+        this._mainDir = mainDir;
+        this._settings = settings;
+        this._path = path;
 
         this._devicesTabs = {};
         this._devicesTabsLabels = {};
         this._discoveredDevices = {};
         this._devices = {};
 
-        this._settings = ExtensionUtils.getSettings(Utils.NANOLIGHTS_SETTINGS_SCHEMA);
         this._settings.connect("changed", () => {
             /* TODO
             if (this._refreshPrefs) {
@@ -311,7 +311,7 @@ const AddDeviceIpDialog = GObject.registerClass({
         this._updateGeneral();
         this._updateAdvanced();
 
-        this._aboutVersion.label = `${Me.metadata.name}, ` + _("version") + `: ${Me.metadata.version}, Copyright (c) 2022 Václav Chlumský`;
+        this._aboutVersion.label = `${this._metadata.name}, ` + _("version") + `: ${this._metadata.version}, Copyright (c) 2023 Václav Chlumský`;
     }
 
     /**
@@ -325,7 +325,7 @@ const AddDeviceIpDialog = GObject.registerClass({
         this._indicatorPosition = this._settings.get_enum(Utils.NANOLIGHTS_SETTINGS_INDICATOR);
         this._forceEnglish = this._settings.get_boolean(Utils.NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
         this._connectionTimeout = this._settings.get_int(Utils.NANOLIGHTS_SETTINGS_CONNECTION_TIMEOUT);
-        Utils.debug = this._settings.get_boolean(Utils.NANOLIGHTS_SETTINGS_DEBUG);
+        Utils.setDebug(this._settings.get_boolean(Utils.NANOLIGHTS_SETTINGS_DEBUG));
         this._iconPack = this._settings.get_enum(Utils.NANOLIGHTS_SETTINGS_ICONPACK);
     }
 
@@ -559,7 +559,7 @@ const AddDeviceIpDialog = GObject.registerClass({
      */
     _updateAdvanced() {
         this._connectionTimeoutComboBox.set_active(this._connectionTimeout - 1);
-        this._debugSwitch.set_active(Utils.debug);
+        this._debugSwitch.set_active(Utils.getDebug());
     }
 
     /**
@@ -587,31 +587,10 @@ const AddDeviceIpDialog = GObject.registerClass({
      * @param {Object} switch
      */
     _debugNotifyActive(debugSwitch) {
-        Utils.debug = debugSwitch.get_active();
+        Utils.setDebug(debugSwitch.get_active());
         this._settings.set_boolean(
             Utils.NANOLIGHTS_SETTINGS_DEBUG,
-            Utils.debug
+            Utils.getDebug()
         );
     }
 });
-
-/**
- * Like `extension.js` this is used for any one-time setup like translations.
- *
- * @method init
- */
-function init() {
-
-    ExtensionUtils.initTranslations();
-}
-
-/**
- * This function is called when the preferences window is first created to build
- * and return a Gtk widget.
- *
- * @method buildPrefsWidget
- * @return {Object} returns the prefsWidget
- */
-function buildPrefsWidget() {
-    return new PrefsWidget();
-}

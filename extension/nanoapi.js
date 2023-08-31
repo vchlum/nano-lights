@@ -5,14 +5,14 @@
  * JavaScript library for Nanoleaf.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -43,14 +43,10 @@
  * @return {Object} instance
  */
 
-const Soup = imports.gi.Soup;
-const Json = imports.gi.Json;
-const GLib = imports.gi.GLib;
-const ByteArray = imports.byteArray;
-const GObject = imports.gi.GObject;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Utils = Me.imports.utils;
+import Soup from 'gi://Soup?version=3.0';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import * as Utils from './utils.js';
 
 var NanoRequestype = {
     NO_RESPONSE_NEED: 0,
@@ -73,7 +69,7 @@ var NanoMessage = class NanoMessage extends Soup.Message {
     }
 };
 
-var Nano =  GObject.registerClass({
+export var Nano =  GObject.registerClass({
     GTypeName: "Nano",
     Properties: {
         "id": GObject.ParamSpec.string("id", "id", "id", GObject.ParamFlags.READWRITE, null),
@@ -257,8 +253,9 @@ var Nano =  GObject.registerClass({
                 case Soup.Status.OK:
                     try {
                         const bytes = this._deviceSession.send_and_read_finish(res);
-                        let response = ByteArray.toString(bytes.get_data());
-                        this._responseJsonParse(method, url, requestNanoType, response);
+                        let decoder = new TextDecoder();
+                        let responseData = decoder.decode(bytes.get_data());
+                        this._responseJsonParse(method, url, requestNanoType, responseData);
                     } catch {
                         this._connectionProblem(requestNanoType);
                     }

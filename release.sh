@@ -1,4 +1,5 @@
 #!/bin/bash
 
-glib-compile-schemas schemas/
-zip -r nano-lights@chlumskyvaclav.gmail.com.zip . --exclude=po/\* --exclude=.git/\* --exclude=\*.sh --exclude=screenshot.png --exclude=*.zip --exclude=FUNDING.yml
+make clean
+make build
+mv build/nano-lights@chlumskyvaclav.gmail.com.zip ./nano-lights@chlumskyvaclav.gmail.com.zip

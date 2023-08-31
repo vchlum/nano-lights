@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+	<gresource prefix="/org/gnome/Shell/Extensions/nano-lights">
+		<file compressed="true" preprocess="xml-stripblanks">ui/prefs.ui</file>
+		<file compressed="true" preprocess="xml-stripblanks">ui/prefsadddeviceip.ui</file>
+		<file compressed="true" preprocess="xml-stripblanks">ui/prefsdevicetab.ui</file>
+	</gresource>
+</gresources>

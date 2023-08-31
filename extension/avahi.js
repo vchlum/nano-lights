@@ -5,14 +5,14 @@
  * JavaScript Avahi mDNS discovery.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,15 +33,15 @@
  * THE SOFTWARE.
  */
 
-const GObject = imports.gi.GObject;
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
+import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 /**
  * https://gjs.guide/guides/gio/subprocesses.html#asynchronous-communication
  */
 
-var Avahi =  GObject.registerClass({
+export var Avahi =  GObject.registerClass({
     GTypeName: "NanoAvahi",
     Properties: {
         "service": GObject.ParamSpec.string("service", "service", "service", GObject.ParamFlags.READWRITE, null),

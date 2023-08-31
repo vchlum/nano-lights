@@ -4,14 +4,14 @@
  * JavaScript class for showing window with colors and picking the color
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,23 +32,20 @@
  * THE SOFTWARE.
  */
 
-const St = imports.gi.St;
-const Gio = imports.gi.Gio;
-const ModalDialog = imports.ui.modalDialog;
-const Clutter = imports.gi.Clutter;
-const GObject = imports.gi.GObject;
-const Main = imports.ui.main;
-const Slider = imports.ui.slider;
-const PopupMenu = imports.ui.popupMenu;
-const Gdk = imports.gi.Gdk;
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Utils = Me.imports.utils;
-const Params = imports.misc.params;
-const MyScreenshot = Me.imports.screenshot;
 
-const Gettext = imports.gettext.domain('nano-lights');
-const __ = Gettext.gettext;
+import St from 'gi://St';
+import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
+import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Slider from 'resource:///org/gnome/shell/ui/slider.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as Params from 'resource:///org/gnome/shell/misc/params.js';
+import * as Utils from './utils.js';
+import * as MyScreenshot from './screenshot.js';
+
+const __ = gettext;
 
 /**
  * ColorSelectorButton button.
@@ -109,7 +106,7 @@ class ColorSelectorButton extends St.Bin {
  * @constructor
  * @return {Object} object
  */
-var ColorPickerBox =  GObject.registerClass({
+export var ColorPickerBox =  GObject.registerClass({
     GTypeName: "NanoColorPickerBox",
     Signals: {
         'color-picked': {},
@@ -123,12 +120,13 @@ var ColorPickerBox =  GObject.registerClass({
      * @method _init
      * @private
      */
-    _init(params) {
+    _init(mainDir, params) {
         params = Params.parse(params, {
             useColorWheel: true,
             useWhiteBox: true,
             showBrightness: false,
         });
+        this._mainDir = mainDir;
 
         super._init();
 
@@ -170,7 +168,7 @@ var ColorPickerBox =  GObject.registerClass({
         this._centerObject(mainbox);
 
         if (this._useColorWheel) {
-            let colorWheel =  new ColorSelectorButton(Me.dir.get_path() + '/media/color-wheel.svg');
+            let colorWheel =  new ColorSelectorButton(this._mainDir.get_path() + '/media/color-wheel.svg');
             signal = colorWheel.connect(
                 "button-press-event",
                 async () => {
@@ -193,7 +191,7 @@ var ColorPickerBox =  GObject.registerClass({
 
         if (this._useWhiteBox) {
             let whiteBox =  new ColorSelectorButton(
-                Me.dir.get_path() + '/media/temperature-bar.svg',
+                this._mainDir.get_path() + '/media/temperature-bar.svg',
                 {
                     buttonWidth: 256,
                     buttonHeight: 32
@@ -312,7 +310,7 @@ var ColorPickerBox =  GObject.registerClass({
  * @constructor
  * @return {Object} modal dialog instance
  */
-var ColorPicker =  GObject.registerClass({
+export var ColorPicker =  GObject.registerClass({
     GTypeName: "NanoColorPicker",
     Signals: {
         'opened': {},
@@ -329,15 +327,16 @@ var ColorPicker =  GObject.registerClass({
      * @method _init
      * @private
      */
-    _init(params) {
+    _init(mainDir, settings, params) {
         params = Params.parse(params, {
             useColorWheel: true,
             useWhiteBox: true,
         });
+        this._mainDir = mainDir;
 
         super._init();
 
-        this._ = Utils.checkGettextEnglish(__);
+        this._ = Utils.checkGettextEnglish(__, settings);
 
         this._signals = {};
         let signal;
@@ -359,7 +358,7 @@ var ColorPicker =  GObject.registerClass({
             key: Clutter.Escape
         }]);
 
-        this.colorPickerBox = new ColorPickerBox({
+        this.colorPickerBox = new ColorPickerBox(this._mainDir, {
             useColorWheel: params.useColorWheel,
             useWhiteBox: params.useWhiteBox,
             showBrightness: true

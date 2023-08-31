@@ -5,14 +5,14 @@
  * JavaScript Gnome extension for Nanoleaf - Main Menu.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,23 +33,22 @@
  * THE SOFTWARE.
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Utils = Me.imports.utils;
-const GObject = imports.gi.GObject;
-const PanelMenu = imports.ui.panelMenu;
-const PopupMenu = imports.ui.popupMenu;
-const St = imports.gi.St;
-const Gio = imports.gi.Gio;
-const Clutter = imports.gi.Clutter;
-const Main = imports.ui.main;
-const GLib = imports.gi.GLib;
-const NanoApi = Me.imports.nanoapi;
-const ColorPicker = Me.imports.colorpicker;
-const Slider = imports.ui.slider;
 
-const Gettext = imports.gettext.domain('nano-lights');
-const __ = Gettext.gettext;
+import GObject from 'gi://GObject';
+import St from 'gi://St';
+import Gio from 'gi://Gio';
+import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as Slider from 'resource:///org/gnome/shell/ui/slider.js';
+import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Utils from './utils.js';
+import * as NanoApi from './nanoapi.js';
+import * as ColorPicker from './colorpicker.js';
+
+const __ = gettext;
 
 const NanoMenuPosition = {
     CENTER: 0,
@@ -86,7 +85,7 @@ var NanoEvents = {
  * @constructor
  * @return {Object} menu widget instance
  */
-var NanoPanelMenu = GObject.registerClass({
+export var NanoPanelMenu = GObject.registerClass({
     GTypeName: 'NanoPanelMenu',
 }, class NanoPanelMenu extends PanelMenu.Button {
 
@@ -96,10 +95,10 @@ var NanoPanelMenu = GObject.registerClass({
      * @method _init
      * @private
      */
-    _init() {
-        super._init(0.0, Me.metadata.name, false);
+    _init(name, mainDir, settings, openPref) {
+        super._init(0.0, name, false);
 
-        this._ = Utils.checkGettextEnglish(__);
+        this._ = Utils.checkGettextEnglish(__, settings);
 
         this._timers = [];
         this._signals = {};
@@ -109,6 +108,8 @@ var NanoPanelMenu = GObject.registerClass({
         this._allEffects = {};
         this._openMenuDefault = null;
         this._nanoMenu = {}
+        this._mainDir = mainDir;
+        this._openPref = openPref;
 
         this._brightnessDuration = 1;
 
@@ -117,7 +118,7 @@ var NanoPanelMenu = GObject.registerClass({
         let box = new St.BoxLayout({style_class: 'panel-status-menu-box'});
 
         let icon = new St.Icon({
-            gicon : Gio.icon_new_for_string(Me.dir.get_path() + '/media/leaf-lights.svg'),
+            gicon : Gio.icon_new_for_string(this._mainDir.get_path() + '/media/leaf-lights.svg'),
             style_class : 'system-status-icon',
         });
 
@@ -130,7 +131,7 @@ var NanoPanelMenu = GObject.registerClass({
         box.add_child(icon);
         this.add_child(box);
 
-        this._settings = ExtensionUtils.getSettings(Utils.NANOLIGHTS_SETTINGS_SCHEMA);
+        this._settings = settings;
         signal = this._settings.connect("changed", () => {
             if (this.readSettings()) {
                 this.rebuildMenuStart();
@@ -161,11 +162,37 @@ var NanoPanelMenu = GObject.registerClass({
                     this._startingUpSignal = undefined;
 
                     this.rebuildMenuStart();
+                    this._setScreenChangeDetection(
+                        this.rebuildMenuStart.bind(this)
+                    );
                 }
             );
         } else {
             this.rebuildMenuStart();
+            this._setScreenChangeDetection(
+                this.rebuildMenuStart.bind(this)
+            );
         }
+    }
+
+    /**
+     * Connects signals with change of displays
+     * to rebuild menu and detect new displays or change display scale.
+     *
+     * @method _setScreenChangeDetection
+     * @private
+     */
+    _setScreenChangeDetection(screenChangeFunction = this.rebuildMenuStart) {
+
+        let signal;
+
+        signal = Main.layoutManager.connect(
+            "monitors-changed",
+            () => {
+                screenChangeFunction();
+            }
+        );
+        this._appendSignal(signal, Main.layoutManager, false);
     }
 
     /**
@@ -215,9 +242,9 @@ var NanoPanelMenu = GObject.registerClass({
         /**
          * debug doesn't need rebuild
          */
-        Utils.debug = this._settings.get_boolean(
+        Utils.setDebug(this._settings.get_boolean(
             Utils.NANOLIGHTS_SETTINGS_DEBUG
-        );
+        ));
 
         /**
          * this._iconPack needs rebuild
@@ -582,7 +609,7 @@ var NanoPanelMenu = GObject.registerClass({
         }
 
         signal = refreshMenuItem.connect(
-            'button-press-event',
+            'activate',
             () => {
                 this._instances = {};
                 rebuildFunction();
@@ -608,8 +635,8 @@ var NanoPanelMenu = GObject.registerClass({
         }
 
         signal = prefsMenuItem.connect(
-            'button-press-event',
-            () => { ExtensionUtils.openPrefs(); }
+            'activate',
+            () => { this._openPref(); }
         );
         this._appendSignal(signal, prefsMenuItem, true, true);
         items.push(prefsMenuItem);
@@ -656,7 +683,7 @@ var NanoPanelMenu = GObject.registerClass({
         );
 
         if (this._iconPack !== NanoIconPack.NONE) {
-            let icon = this._getIconByPath(Me.dir.get_path() + '/media/leaf-lights.svg');
+            let icon = this._getIconByPath(this._mainDir.get_path() + '/media/leaf-lights.svg');
 
             if (icon !== null){
                 nanoSubMenu.insert_child_at_index(icon, 1);
@@ -1086,12 +1113,6 @@ var NanoPanelMenu = GObject.registerClass({
 
         item.originalActivate = item.activate;
         item.activate = (event) => {
-            /**
-             * activate function is used here becase
-             * the menu.open(true) does not work with
-             * 'button-press-event' signal correctly
-             */
-
             if (id !== "all" && !this._instances[id].isConnected()) {
                 return item.originalActivate(event);
             }
@@ -1150,7 +1171,7 @@ var NanoPanelMenu = GObject.registerClass({
         this._openMenuDefault = deviceSubMenu.menu;
 
         deviceSubMenu.connect(
-            'button-press-event',
+            'activate',
             () => {
                 this.checkInstances();
             }
@@ -1596,7 +1617,7 @@ var NanoPanelMenu = GObject.registerClass({
             let path = `${this._rndID()}::device::${id}::switch`;
 
             effectItem.connect(
-                "button-press-event",
+                "activate",
                 this._menuEventHandler.bind(
                     this,
                     {
@@ -1620,7 +1641,7 @@ var NanoPanelMenu = GObject.registerClass({
         controlItem.x_align = Clutter.ActorAlign.CENTER;
         controlItem.remove_child(controlItem.label);
 
-        let colorPickerBox = new ColorPicker.ColorPickerBox({
+        let colorPickerBox = new ColorPicker.ColorPickerBox(this._mainDir, {
             useColorWheel: true,
             useWhiteBox: true
         });

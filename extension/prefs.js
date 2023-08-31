@@ -1,18 +1,18 @@
 'use strict';
 
 /**
- * extension nano-lights
+ * prefs nano-lights
  * JavaScript Gnome extension for Nanoleaf devices.
  *
  * @author Václav Chlumský
- * @copyright Copyright 2022, Václav Chlumský.
+ * @copyright Copyright 2023, Václav Chlumský.
  */
 
  /**
  * @license
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Václav Chlumský
+ * Copyright (c) 2023 Václav Chlumský
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,45 +33,25 @@
  * THE SOFTWARE.
  */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Main = imports.ui.main;
-const NanoMenu = Me.imports.nanomenu;
+import Adw from 'gi://Adw';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-var nanoLightsMenu;
+export default class NanoLightsPreferences extends ExtensionPreferences {
+    fillPreferencesWindow(window) {
+        const resource = Gio.Resource.load(GLib.build_filenamev([this.path, 'preferences.gresource']));
+        Gio.resources_register(resource);
 
-/**
- * This function is called once the extension is loaded, not enabled.
- *
- * @method init
- */
-function init() {
+        window.set_default_size(640, 480);
 
-    ExtensionUtils.initTranslations();
-}
+        const dummyPage = new Adw.PreferencesPage();
+        window.add(dummyPage);
 
-/**
- * This function could be called after the extension is enabled.
- *
- * @method enable
- */
-function enable() {
-
-    nanoLightsMenu = new NanoMenu.NanoPanelMenu();
-
-    Main.panel.addToStatusArea('nano-lights', nanoLightsMenu);
-}
-
-/**
- * This function could be called after the extension is uninstalled,
- * disabled GNOME Tweaks, when you log out or when the screen locks.
- *
- * @method disable
- */
-function disable() {
-
-    nanoLightsMenu.disarmTimers();
-    nanoLightsMenu.disconnectSignals(true);
-    nanoLightsMenu.destroy();
-    nanoLightsMenu = null;
+        import('./prefspage.js').then((prefspage) => {
+            window.remove(dummyPage);
+            let prefs = new prefspage.PreferencesPage(this.metadata, this.dir, this.getSettings(), this.path);
+            window.add(prefs);
+        });
+    }
 }
