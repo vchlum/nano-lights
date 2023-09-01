@@ -52,6 +52,9 @@ export default class NanoLightsPreferences extends ExtensionPreferences {
             window.remove(dummyPage);
             let prefs = new prefspage.PreferencesPage(this.metadata, this.dir, this.getSettings(), this.path);
             window.add(prefs);
+        }).catch(err => {
+            console.error(err.message);
+            console.error(err.stack);
         });
     }
 }

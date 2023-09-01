@@ -538,7 +538,7 @@ export var NanoPanelMenu = GObject.registerClass({
             icon.add_effect(iconEffect);
 
         } catch(e) {
-            logError(e, `Failed to get gnome icon: ${iconName}`);
+            Utils.logError(`Failed to get gnome icon: ${iconName}`);
             return null;
         }
 
@@ -573,7 +573,7 @@ export var NanoPanelMenu = GObject.registerClass({
             icon.add_effect(iconEffect);
 
         } catch(e) {
-            logError(e, `Failed to get icon: ${iconPath}`);
+            Utils.logError(`Failed to get icon: ${iconPath}`);
             return null;
         }
 

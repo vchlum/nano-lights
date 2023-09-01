@@ -86,7 +86,7 @@ export var MyScreenshot =  GObject.registerClass({
                     reject();
                 });
             } catch(e) {
-                logError(e, "Failed to get pixel from screenshot.");
+                console.error(`Failed to get pixel from screenshot: ${e.message} ${e.stack}`);
             }
         });
     }

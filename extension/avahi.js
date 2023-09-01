@@ -103,7 +103,7 @@ export var Avahi =  GObject.registerClass({
                     this.readOutput(stream, lineBuffer);
                 }
             } catch (e) {
-                logError(e);
+                console.error(e);
             }
         });
     }
@@ -153,7 +153,7 @@ export var Avahi =  GObject.registerClass({
                 if (status === 0) {
                     this.emit("finished");
                 } else {
-                    logError(new Error(stderrLines.join('\n')));
+                    console.error(new Error(stderrLines.join('\n')));
                 }
         
                 stdoutStream.close(null);

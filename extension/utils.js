@@ -68,7 +68,7 @@ export function getDebug() {
  */
 export function logDebug(msg) {
     if (_debug) {
-        log(`Nano Lights [debug]: ${msg}`)
+        console.log(`Nano Lights [debug]: ${msg}`)
     }
 }
 
@@ -84,8 +84,8 @@ export function removeFromArray(arr, remove) {
  * @method logError
  * @param {String} meassage to print
  */
- function logError(msg) {
-    log(`Nano Lights [error]: ${msg}`)
+export function logError(msg) {
+    console.error(`Nano Lights [error]: ${msg}`)
 }
 
 /**
