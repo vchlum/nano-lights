@@ -1,3 +1,5 @@
+## Version 5
+ * porting to Gnome 45
 ## Version 4
  * add Gnome 44 support
 ## Version 3
