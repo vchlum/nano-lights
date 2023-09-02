@@ -48,6 +48,12 @@ export default class NanoLightsPreferences extends ExtensionPreferences {
         const dummyPage = new Adw.PreferencesPage();
         window.add(dummyPage);
 
+        /**
+         * Here, we have the dynamic import because we use:
+         * Template: 'resource:///org/gnome/Shell/Extensions/hue-lights/ui/...
+         * in 'prefspage.js' and the import must be done after 'Gio.resources_register(resource);'
+         * otherwise templates do not work.
+         */
         import('./prefspage.js').then((prefspage) => {
             window.remove(dummyPage);
             let prefs = new prefspage.PreferencesPage(this.metadata, this.dir, this.getSettings(), this.path);
