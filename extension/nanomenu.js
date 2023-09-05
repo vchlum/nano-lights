@@ -990,6 +990,36 @@ export var NanoPanelMenu = GObject.registerClass({
     }
 
     /**
+     * Creates timer for delayed function e.g.: slider scroll handle.
+     * Runs only one in specified time.
+     * 
+     * @method _timeHandleSliderScrollEvent
+     * @private
+     * @param {Number} delay
+     * @param {Object} delayed function
+     */
+    _runOnlyOnceInTime(delay, fnc) {
+        if (this._runOnlyOnceInProgress) {
+            return;
+        }
+        this._runOnlyOnceInProgress = true;
+
+        /**
+         * e.g. the slider value is being modified back by the device status while moving the slider,
+         * so we can not do imminent change while scrolling. It would jump up and down.
+         * This timer will ensure it runs only once in time to prevent the jumping.
+         */
+        let timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+
+            fnc();
+
+            this._runOnlyOnceInProgress = false;
+            this._timers = Utils.removeFromArray(this._timers, timerId);
+        });
+        this._timers.push(timerId);
+    }
+
+    /**
      * Creates slider for controlling the brightness
      * 
      * @method _createBrightnessSlider
@@ -1023,6 +1053,23 @@ export var NanoPanelMenu = GObject.registerClass({
                     "object":slider,
                     "type": NanoEvents.BRIGHTNESS
                 }
+            )
+        );
+
+        slider.connect(
+            "scroll-event",
+            this._runOnlyOnceInTime.bind(
+                this,
+                500,
+                this._menuEventHandler.bind(
+                    this,
+                    {
+                        "path": path,
+                        "id": id,
+                        "object":slider,
+                        "type": NanoEvents.BRIGHTNESS
+                    }
+                )
             )
         );
 
