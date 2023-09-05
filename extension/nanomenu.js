@@ -1088,7 +1088,7 @@ export var NanoPanelMenu = GObject.registerClass({
 
         item = new PopupMenu.PopupMenuItem(name);
 
-        let label = item.label
+        let label = item.label;
         item.remove_child(item.label);
         let itemBox = new St.BoxLayout();
         itemBox.vertical = true;
@@ -1143,7 +1143,7 @@ export var NanoPanelMenu = GObject.registerClass({
         /* disable closing menu on item activated */
         deviceSubMenu.menu.itemActivated = (animate) => {};
 
-        let label = deviceSubMenu.label
+        let label = deviceSubMenu.label;
         deviceSubMenu.remove_child(deviceSubMenu.label);
         let itemBox = new St.BoxLayout();
         itemBox.vertical = true;

@@ -41,7 +41,7 @@ import Gio from 'gi://Gio';
  * https://gjs.guide/guides/gio/subprocesses.html#asynchronous-communication
  */
 
-export var Avahi =  GObject.registerClass({
+export var Avahi = GObject.registerClass({
     GTypeName: "NanoAvahi",
     Properties: {
         "service": GObject.ParamSpec.string("service", "service", "service", GObject.ParamFlags.READWRITE, null),
@@ -95,7 +95,7 @@ export var Avahi =  GObject.registerClass({
         stream.read_line_async(0, null, (stream, res) => {
             try {
                 let line = stream.read_line_finish_utf8(res)[0];
-    
+
                 if (line !== null) {
                     this.parseLine(line);
 
@@ -145,7 +145,7 @@ export var Avahi =  GObject.registerClass({
                 }),
                 close_base_stream: true
             });
-        
+
             let stderrLines = [];
             this.readOutput(stderrStream, stderrLines);
 
@@ -155,7 +155,7 @@ export var Avahi =  GObject.registerClass({
                 } else {
                     console.error(new Error(stderrLines.join('\n')));
                 }
-        
+
                 stdoutStream.close(null);
                 stderrStream.close(null);
                 GLib.spawn_close_pid(pid);

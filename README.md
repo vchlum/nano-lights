@@ -23,3 +23,5 @@ https://extensions.gnome.org/extension/5519/nano-lights/
   - These are only required to install from source
   - `make`
   - `gnome-shell` (`gnome-extensions` command)
+  - These are recommended to run the extension
+  - `avahi` (discovering devices on local network)
