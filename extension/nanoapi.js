@@ -48,7 +48,7 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import * as Utils from './utils.js';
 
-var NanoRequestype = {
+const NanoRequestype = {
     NO_RESPONSE_NEED: 0,
     SELF_CHECK: 1,
     AUTHORIZATION: 2,
@@ -57,7 +57,7 @@ var NanoRequestype = {
     ALL_EFFECTS: 5
 };
 
-var NanoMessage = class NanoMessage extends Soup.Message {
+const NanoMessage = class NanoMessage extends Soup.Message {
 
     constructor(params) {
 
@@ -69,7 +69,7 @@ var NanoMessage = class NanoMessage extends Soup.Message {
     }
 };
 
-export var Nano =  GObject.registerClass({
+export const Nano =  GObject.registerClass({
     GTypeName: "Nano",
     Properties: {
         "id": GObject.ParamSpec.string("id", "id", "id", GObject.ParamFlags.READWRITE, null),

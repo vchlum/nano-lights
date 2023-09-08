@@ -58,20 +58,20 @@ const NanoMenuPosition = {
 
 const IconSize = 20;
 
-var NanoIconPack = {
+const NanoIconPack = {
     NONE: 0,
     BRIGHT: 1,
     DARK: 2
 };
 
-var NanoRefreshItems = {
+const NanoRefreshItems = {
     SWITCH_VALUE: 0,
     SWITCH_COLOR: 1,
     SLIDER_BRIGHTNESS: 2,
     SLIDER_COLOR: 3
 }
 
-var NanoEvents = {
+const NanoEvents = {
     SWITCH: 0,
     BRIGHTNESS: 2,
     COLOR_PICKER: 3,
@@ -85,7 +85,7 @@ var NanoEvents = {
  * @constructor
  * @return {Object} menu widget instance
  */
-export var NanoPanelMenu = GObject.registerClass({
+export const NanoPanelMenu = GObject.registerClass({
     GTypeName: 'NanoPanelMenu',
 }, class NanoPanelMenu extends PanelMenu.Button {
 

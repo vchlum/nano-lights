@@ -33,18 +33,18 @@
  * THE SOFTWARE.
  */
 
-export var NANOLIGHTS_SETTINGS_SCHEMA = "org.gnome.shell.extensions.nano-lights";
-export var NANOLIGHTS_SETTINGS_FORCE_ENGLISH = "force-english";
-export var NANOLIGHTS_SETTINGS_DEVICES = "devices";
-export var NANOLIGHTS_SETTINGS_DEVICES_TYPE = "a{sa{ss}}";
-export var NANOLIGHTS_SETTINGS_INDICATOR = "indicator-position";
-export var NANOLIGHTS_SETTINGS_CONNECTION_TIMEOUT = "connection-timeout";
-export var NANOLIGHTS_SETTINGS_DEBUG = "debug";
-export var NANOLIGHTS_SETTINGS_ICONPACK = "icon-pack";
-export var NANOLIGHTS_SETTINGS_MENU_SELECTED = "menu-selected";
-export var NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{ss}}";
+export const NANOLIGHTS_SETTINGS_SCHEMA = "org.gnome.shell.extensions.nano-lights";
+export const NANOLIGHTS_SETTINGS_FORCE_ENGLISH = "force-english";
+export const NANOLIGHTS_SETTINGS_DEVICES = "devices";
+export const NANOLIGHTS_SETTINGS_DEVICES_TYPE = "a{sa{ss}}";
+export const NANOLIGHTS_SETTINGS_INDICATOR = "indicator-position";
+export const NANOLIGHTS_SETTINGS_CONNECTION_TIMEOUT = "connection-timeout";
+export const NANOLIGHTS_SETTINGS_DEBUG = "debug";
+export const NANOLIGHTS_SETTINGS_ICONPACK = "icon-pack";
+export const NANOLIGHTS_SETTINGS_MENU_SELECTED = "menu-selected";
+export const NANOLIGHTS_SETTINGS_MENU_SELECTED_TYPE = "a{sa{ss}}";
 
-var _debug = false;
+let _debug = false;
 
 export function checkGettextEnglish(gettext, settings) {
     let forceEnglish = settings.get_boolean(NANOLIGHTS_SETTINGS_FORCE_ENGLISH);
