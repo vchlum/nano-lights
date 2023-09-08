@@ -43,8 +43,6 @@ export default class NanoLightsPreferences extends ExtensionPreferences {
         const resource = Gio.Resource.load(GLib.build_filenamev([this.path, 'preferences.gresource']));
         Gio.resources_register(resource);
 
-        window.set_default_size(640, 480);
-
         const dummyPage = new Adw.PreferencesPage();
         window.add(dummyPage);
 
@@ -57,6 +55,7 @@ export default class NanoLightsPreferences extends ExtensionPreferences {
         import('./prefspage.js').then((prefspage) => {
             window.remove(dummyPage);
             let prefs = new prefspage.PreferencesPage(this.metadata, this.dir, this.getSettings(), this.path);
+            window.set_default_size(640, 480);
             window.add(prefs);
         }).catch(err => {
             console.error(err.message);
