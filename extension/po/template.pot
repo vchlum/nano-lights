@@ -1,0 +1,126 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-09-12 17:46+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Finish"
+msgstr ""
+
+msgid "Refresh menu"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Nano Lights"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "No device selected"
+msgstr ""
+
+msgid "Select a device"
+msgstr ""
+
+msgid "Color & Temperature"
+msgstr ""
+
+msgid "Scenes"
+msgstr ""
+
+msgid "Connected"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Unreachable"
+msgstr ""
+
+msgid "Connect"
+msgstr ""
+
+msgid "version"
+msgstr ""
+
+msgid "Nanoleaf devices"
+msgstr ""
+
+msgid "Add Nanoleaf by IP"
+msgstr ""
+
+msgid "Discover Nanoleaf devices"
+msgstr ""
+
+msgid "The discovery feature needs 'avahi-browse' installed."
+msgstr ""
+
+msgid "General settings"
+msgstr ""
+
+msgid "Position of the menu icon in panel:"
+msgstr ""
+
+msgid "center"
+msgstr ""
+
+msgid "right"
+msgstr ""
+
+msgid "left"
+msgstr ""
+
+msgid "Icon pack:"
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+msgid "bright"
+msgstr ""
+
+msgid "dark"
+msgstr ""
+
+msgid "Force English language (requires relogin):"
+msgstr ""
+
+msgid "Advanced settings"
+msgstr ""
+
+msgid "Nanoleaf devices connection timeout (seconds):"
+msgstr ""
+
+msgid "Log debug messages:"
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Enter new IP address"
+msgstr ""
+
+msgid "OK"
+msgstr ""
+
+msgid "General settings"
+msgstr ""
+
+msgid "IP address:"
+msgstr ""
+
+msgid "Rename"
+msgstr ""
+
+msgid "On the Nanoleaf controller, hold the on-off button for 5-7 seconds until the LED starts flashing. While the LED is flashing, pres the 'Connect' button."
+msgstr ""
