@@ -1,0 +1,128 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-09-12 17:46+0200\n"
+"PO-Revision-Date: 2023-09-19 14:33+0200\n"
+"Last-Translator: Heimen Stoffels <vistausss@fastmail.com>\n"
+"Language-Team: \n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.3.2\n"
+
+msgid "Finish"
+msgstr "Afronden"
+
+msgid "Refresh menu"
+msgstr "Menu herladen"
+
+msgid "Settings"
+msgstr "Voorkeuren"
+
+msgid "Nano Lights"
+msgstr "Nano-verlichting"
+
+msgid "All"
+msgstr "Alles"
+
+msgid "No device selected"
+msgstr "Geen apparaat gekozen"
+
+msgid "Select a device"
+msgstr "Kies een apparaat"
+
+msgid "Color & Temperature"
+msgstr "Kleur en temperatuur"
+
+msgid "Scenes"
+msgstr "Scènes"
+
+msgid "Connected"
+msgstr "Verbonden"
+
+msgid "Remove"
+msgstr "Verwĳderen"
+
+msgid "Unreachable"
+msgstr "Onbereikbaar"
+
+msgid "Connect"
+msgstr "Verbinden"
+
+msgid "version"
+msgstr "Versie"
+
+msgid "Nanoleaf devices"
+msgstr "Nanoleaf-apparaten"
+
+msgid "Add Nanoleaf by IP"
+msgstr "Nanoleaf toevoegen op ip-adres"
+
+msgid "Discover Nanoleaf devices"
+msgstr "Nanoleaf-apparaten ontdekken"
+
+msgid "The discovery feature needs 'avahi-browse' installed."
+msgstr "Voor de ontdekfunctie is ‘avahi-browse’ vereist."
+
+msgid "General settings"
+msgstr "Algemene voorkeuren"
+
+msgid "Position of the menu icon in panel:"
+msgstr "Locatie van menupictogram op bovenbalk:"
+
+msgid "center"
+msgstr "Midden"
+
+msgid "right"
+msgstr "Rechts"
+
+msgid "left"
+msgstr "Links"
+
+msgid "Icon pack:"
+msgstr "Pictogramthema:"
+
+msgid "none"
+msgstr "geen"
+
+msgid "bright"
+msgstr "Licht"
+
+msgid "dark"
+msgstr "Donker"
+
+msgid "Force English language (requires relogin):"
+msgstr "Engelse taal gebruiken (vereist af- en aanmelden):"
+
+msgid "Advanced settings"
+msgstr "Geavanceerde voorkeuren"
+
+msgid "Nanoleaf devices connection timeout (seconds):"
+msgstr "Nanoleaf-verbindingstime-out (in seconden):"
+
+msgid "Log debug messages:"
+msgstr "Foutopsporingsberichten opslaan in logboek:"
+
+msgid "About"
+msgstr "Over"
+
+msgid "Enter new IP address"
+msgstr "Voer een ip-adres in"
+
+msgid "OK"
+msgstr "Oké"
+
+msgid "IP address:"
+msgstr "Ip-adres:"
+
+msgid "Rename"
+msgstr "Naam wijzigen"
+
+msgid ""
+"On the Nanoleaf controller, hold the on-off button for 5-7 seconds until the "
+"LED starts flashing. While the LED is flashing, pres the 'Connect' button."
+msgstr ""
+"Houd de aan-/uitknop op de Nanoleaf-controller 5-7 seconden ingedrukt totdat "
+"het ledlampje knippert. Klik op ‘Verbinden’ zodra het lampje knippert."
