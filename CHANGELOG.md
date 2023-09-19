@@ -1,3 +1,8 @@
+## Version 6
+ * add Czech translation
+ * improve use of pick_color
+ * change brightness with scroll wheel
+ * miscellaneous fixes
 ## Version 5
  * porting to Gnome 45
 ## Version 4
