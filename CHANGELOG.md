@@ -1,3 +1,6 @@
+## Version 7
+ * add Gnome 46 support
+ * added Dutch translation
 ## Version 6
  * add Czech translation
  * improve use of pick_color
