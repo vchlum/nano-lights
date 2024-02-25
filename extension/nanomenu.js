@@ -1139,9 +1139,9 @@ export const NanoPanelMenu = GObject.registerClass({
         item.remove_child(item.label);
         let itemBox = new St.BoxLayout();
         itemBox.vertical = true;
-        itemBox.add(label);
+        itemBox.add_child(label);
 
-        itemBox.add(this._createDeviceSlider(data, id));
+        itemBox.add_child(this._createDeviceSlider(data, id));
 
         item.insert_child_at_index(itemBox, 1);
 
@@ -1156,7 +1156,7 @@ export const NanoPanelMenu = GObject.registerClass({
         item.set_x_align(Clutter.ActorAlign.FILL);
         item.label.set_x_expand(true);
 
-        item.add(this._createDeviceSwitch(data, id));
+        item.add_child(this._createDeviceSwitch(data, id));
 
         item.originalActivate = item.activate;
         item.activate = (event) => {
@@ -1194,7 +1194,7 @@ export const NanoPanelMenu = GObject.registerClass({
         deviceSubMenu.remove_child(deviceSubMenu.label);
         let itemBox = new St.BoxLayout();
         itemBox.vertical = true;
-        itemBox.add(label);
+        itemBox.add_child(label);
         deviceSubMenu.insert_child_at_index(itemBox, 1);
 
         if (this._iconPack !== NanoIconPack.NONE) {
@@ -1693,7 +1693,7 @@ export const NanoPanelMenu = GObject.registerClass({
             useWhiteBox: true
         });
 
-        controlItem.add(colorPickerBox.createColorBox());
+        controlItem.add_child(colorPickerBox.createColorBox());
 
         path = `${this._rndID()}::device::${id}::color`;
         colorPickerBox.connect(
@@ -2011,11 +2011,16 @@ export const NanoPanelMenu = GObject.registerClass({
 
         let children = null;
 
+        if (! this.container.get_parent()) {
+            /* not in the status area yet */
+            return;
+        }
+
         if (this._indicatorPositionBackUp === this._indicatorPosition) {
             return;
         }
 
-        this.get_parent().remove_actor(this);
+        this.container.get_parent().remove_child(this.container);
 
         switch (this._indicatorPosition) {
 
@@ -2023,7 +2028,7 @@ export const NanoPanelMenu = GObject.registerClass({
 
                 children = Main.panel._leftBox.get_children();
                 Main.panel._leftBox.insert_child_at_index(
-                    this,
+                    this.container,
                     children.length
                 );
                 break;
@@ -2032,7 +2037,7 @@ export const NanoPanelMenu = GObject.registerClass({
 
                 children = Main.panel._centerBox.get_children();
                 Main.panel._centerBox.insert_child_at_index(
-                    this,
+                    this.container,
                     children.length
                     );
                 break;
@@ -2040,12 +2045,18 @@ export const NanoPanelMenu = GObject.registerClass({
             case NanoMenuPosition.RIGHT:
 
                 children = Main.panel._rightBox.get_children();
-                Main.panel._rightBox.insert_child_at_index(this, 0);
+                Main.panel._rightBox.insert_child_at_index(
+                    this.container,
+                    0
+                    );
                 break;
 
             default:
                 children = Main.panel._rightBox.get_children();
-                Main.panel._rightBox.insert_child_at_index(this, 0);
+                Main.panel._rightBox.insert_child_at_index(
+                    this.container,
+                    0
+                    );
         }
 
         this._indicatorPositionBackUp = this._indicatorPosition;

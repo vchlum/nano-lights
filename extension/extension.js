@@ -47,6 +47,7 @@ export default class NanoLightsExtension extends Extension {
         );
 
         Main.panel.addToStatusArea('nano-lights', this._nanoLightsMenu);
+        this._nanoLightsMenu.setPositionInPanel();
     }
 
     disable() {
