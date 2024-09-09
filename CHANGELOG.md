@@ -1,3 +1,5 @@
+## Version 8
+ * add Gnome 47 support
 ## Version 7
  * add Gnome 46 support
  * added Dutch translation

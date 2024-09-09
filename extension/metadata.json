@@ -3,7 +3,7 @@
     "settings-schema": "org.gnome.shell.extensions.nano-lights",
     "name": "Nano Lights",
     "description": "This extension controls Nanoleaf shapes and possibly others Nanoleaf devices on your local (wifi) network. If you are experiencing an error on the upgrade, please log out and log in again.",
-    "version": 7,
+    "version": 8,
     "original-author": "chlumskyvaclav@gmail.com",
     "shell-version": [
       "45",
