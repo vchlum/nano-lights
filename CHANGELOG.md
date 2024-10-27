@@ -1,3 +1,5 @@
+## Version 9
+ * fix switches toggling area
 ## Version 8
  * add Gnome 47 support
 ## Version 7
