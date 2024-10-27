@@ -1119,18 +1119,19 @@ export const NanoPanelMenu = GObject.registerClass({
         let path = `${this._rndID()}::device::${id}::switch`;
 
         switchBox = new PopupMenu.Switch(false);
+        switchBox.reactive = false;
         switchButton = new St.Button({reactive: true, can_focus: true});
         switchButton.set_x_align(Clutter.ActorAlign.END);
         switchButton.set_x_expand(false);
         switchButton.child = switchBox;
         switchButton.connect(
-            "button-press-event",
+            "clicked",
             () => {
                 switchBox.toggle();
             }
         );
         switchButton.connect(
-            "button-press-event",
+            "clicked",
             this._menuEventHandler.bind(
                 this,
                 {
@@ -1494,7 +1495,7 @@ export const NanoPanelMenu = GObject.registerClass({
         unselectButton.child = buttonContent;
 
         unselectButton.connect(
-            "button-press-event",
+            "clicked",
             () => {
                 this._selectNanoMenu(data, "all");
             }
